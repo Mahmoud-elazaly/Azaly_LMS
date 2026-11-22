@@ -6,6 +6,8 @@ export const courseLocale = pgEnum('course_locale', ['ar', 'en']);
 export const courses = pgTable('courses', {
   id: uuid().defaultRandom().primaryKey(),
   slug: text().notNull().unique(),
+  catalogPosition: integer('catalog_position').notNull().default(0),
+  withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
 }, (table) => [
   check('courses_slug_format', sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
 ]);

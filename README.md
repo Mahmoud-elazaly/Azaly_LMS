@@ -167,3 +167,19 @@ bash infra/verify-phase2.sh
 ```
 
 The verification stack publishes no ports and stops on exit. It retains its isolated database volume. The runner exercises the standalone production container, restarts it to validate session persistence, and runs the isolated Playwright suite against the migrated database.
+
+## Phase 3 course builder on WSL
+
+Run `bash infra/verify-phase3.sh` from the repository root to verify in a fresh isolated project. The script publishes no host ports, stops its services on exit, and retains the isolated database volume. Its failure output includes the web, browser and PostgreSQL container logs where available.
+
+For an existing deployment, apply the additive migrations using the usual migration service. Generate a distinct authoring password with `openssl rand -hex 32`, then provision the login using the same Compose project as the deployment:
+
+```bash
+read -rs -p 'Authoring database password (64 lowercase hex characters): ' author_db_password
+printf '\n'
+printf '{"password":"%s"}\n' "$author_db_password" |
+  docker compose run --rm -T migrate node scripts/identity-admin.mjs provision-authoring
+unset author_db_password
+```
+
+Set `AUTHORING_DATABASE_URL` in the ignored `.env` to `postgresql://academy_author:YOUR_AUTHORING_DB_PASSWORD@postgres:5432/academy` using the same password and recreate the web service to load the setting. Use the role-aware navigation to open `/en/builder` or `/ar/builder`. Complete one language to publish, or complete both to publish in both catalogs. Any started course translation must have its own complete module, lesson and block text. Archive hides the course while preserving its revisions and slug.

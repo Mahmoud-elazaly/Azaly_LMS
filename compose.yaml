@@ -33,6 +33,7 @@ services:
     environment:
       DATABASE_URL: postgresql://academy_reader:${POSTGRES_READER_PASSWORD:?Set POSTGRES_READER_PASSWORD}@postgres:5432/academy
       AUTH_DATABASE_URL: ${AUTH_DATABASE_URL:-}
+      AUTHORING_DATABASE_URL: ${AUTHORING_DATABASE_URL:-}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
     build:

@@ -50,18 +50,24 @@ async function bootstrap(client) {
   return 'Owner initialized.';
 }
 
-async function provision(client) {
+async function provision(client, authoring) {
+  const login = authoring ? 'academy_author' : 'academy_auth';
+  const group = authoring ? 'academy_authoring_runtime' : 'academy_auth_runtime';
   const result = z.object({ password: z.string().regex(/^[a-f0-9]{64}$/) }).safeParse(readInput());
   if (!result.success) throw new OperatorError('Provide a password generated with openssl rand -hex 32.');
   const existing = await client.query(
     `SELECT rolcanlogin AND rolinherit AND NOT (rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls)
-      AND pg_has_role(oid, 'academy_auth_runtime', 'MEMBER')
-      AND NOT pg_has_role(oid, 'academy_reader', 'MEMBER') AS permitted
-      FROM pg_roles WHERE rolname = 'academy_auth'`,
+      AND pg_has_role(login.oid, $2::name, 'USAGE')
+      AND NOT EXISTS (
+        SELECT FROM pg_roles other
+        WHERE other.rolname IN ('academy_reader', 'academy_auth_runtime', 'academy_authoring_runtime')
+          AND other.rolname <> $2 AND pg_has_role(login.oid, other.oid, 'MEMBER')
+      ) AS permitted
+      FROM pg_roles login WHERE rolname = $1`, [login, group],
   );
   if (existing.rowCount) {
-    if (!existing.rows[0].permitted) throw new OperatorError('Existing authentication database login has unexpected privileges.');
-    return 'Authentication database login already exists. Its password was preserved.';
+    if (!existing.rows[0].permitted) throw new OperatorError('Existing database login has unexpected privileges.');
+    return 'Database login already exists. Its password was preserved.';
   }
 
   // The migration role owns PostgreSQL administration. Keep credentials out of
@@ -71,17 +77,17 @@ async function provision(client) {
   await client.query('SET LOCAL log_parameter_max_length_on_error = 0');
   await client.query("SET LOCAL log_min_error_statement = 'panic'");
   const statement = await client.query(
-    "SELECT format('CREATE ROLE academy_auth LOGIN INHERIT PASSWORD %L', $1::text) AS ddl",
-    [result.data.password],
+    "SELECT format('CREATE ROLE %I LOGIN INHERIT PASSWORD %L', $1::text, $2::text) AS ddl",
+    [login, result.data.password],
   );
   await client.query(statement.rows[0].ddl);
-  await client.query('GRANT academy_auth_runtime TO academy_auth');
-  return 'Authentication database login created.';
+  await client.query(`GRANT ${group} TO ${login}`);
+  return 'Database login created.';
 }
 
 async function main() {
   const command = process.argv[2];
-  if (command !== 'bootstrap' && command !== 'provision') throw new OperatorError('Unknown identity command.');
+  if (command !== 'bootstrap' && command !== 'provision' && command !== 'provision-authoring') throw new OperatorError('Unknown identity command.');
   if (!process.env.DATABASE_URL) throw new OperatorError('A migration-owner DATABASE_URL is required.');
   const pool = new Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 2500 });
   try {
@@ -90,7 +96,7 @@ async function main() {
       await client.query('BEGIN');
       // Serialize each administrative operation across CLI invocations.
       await client.query('SELECT pg_advisory_xact_lock($1, $2)', [1861653101, command === 'bootstrap' ? 1 : 2]);
-      const message = await (command === 'bootstrap' ? bootstrap(client) : provision(client));
+      const message = await (command === 'bootstrap' ? bootstrap(client) : provision(client, command === 'provision-authoring'));
       await client.query('COMMIT');
       console.log(message);
     } catch (error) {

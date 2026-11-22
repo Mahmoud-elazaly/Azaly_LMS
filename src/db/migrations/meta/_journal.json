@@ -29,6 +29,13 @@
       "when": 1795382402000,
       "tag": "0003_identity_management",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795382403000,
+      "tag": "0004_authoring",
+      "breakpoints": true
     }
   ]
 }

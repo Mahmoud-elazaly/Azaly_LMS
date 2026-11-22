@@ -11,6 +11,7 @@ import { saveTheme } from '@/ui/theme-action';
 import { identityCopy } from '@/features/identity/copy';
 import { currentPrincipal } from '@/features/identity/session';
 import { AuthForm } from '@/ui/auth-form';
+import { builderCopy } from '@/features/authoring/copy';
 import './styles.css';
 
 export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Promise<Metadata> {
@@ -27,6 +28,7 @@ export default async function Layout({ children, params }: { children: ReactNode
   const accountLinks = principal ? [
     { path: '/dashboard', label: account.dashboard },
     { path: '/profile', label: account.profile },
+    ...(principal.role !== 'STUDENT' ? [{ path: '/builder', label: builderCopy(locale).builder }] : []),
     ...(principal.role === 'INSTRUCTOR' ? [{ path: '/instructor', label: account.instructor }] : []),
     ...(principal.role === 'STUDENT' ? [{ path: '/student', label: account.student }] : []),
     ...(principal.role === 'OWNER' || principal.role === 'ADMIN' ? [{ path: '/admin', label: account.admin }] : []),

@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, lte } from 'drizzle-orm';
+import { and, desc, eq, isNull, isNotNull, lte } from 'drizzle-orm';
 import { database } from '@/db/client';
 import { courses, courseTranslations, courseVersions } from '@/db/schema';
 import type { Locale } from '@/i18n/locales';
@@ -23,6 +23,6 @@ export async function readPublicCatalog(locale: Locale, slug?: string) {
       eq(courseTranslations.versionId, latest.id),
       eq(courseTranslations.locale, locale),
     ))
-    .where(slug === undefined ? undefined : eq(courses.slug, slug))
-    .orderBy(courses.slug);
+    .where(and(isNull(courses.withdrawnAt), slug === undefined ? undefined : eq(courses.slug, slug)))
+    .orderBy(courses.catalogPosition, courses.slug);
 }

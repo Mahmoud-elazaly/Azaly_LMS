@@ -85,3 +85,13 @@ pre { @apply overflow-x-auto rounded-lg p-4; text-align: left; background: var(-
 .identity-button:disabled { @apply opacity-60; }
 .identity-users { @apply grid gap-4; }
 .identity-inline { @apply mt-3 flex flex-wrap items-end gap-2; }
+
+.builder-fields { @apply grid max-w-3xl gap-4; }
+.builder-fields label { @apply grid gap-1; }
+.builder-fields input, .builder-fields textarea, .builder-fields select {
+  @apply rounded-md border px-3 py-2;
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+.builder-controls { @apply flex flex-wrap gap-2; }

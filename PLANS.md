@@ -171,3 +171,25 @@ The request builder now reads JSON through the incoming request's framework-supp
 | Playwright | 7/7 passed, including identity 2/2 and public portal 5/5. |
 
 The successful runtime and browser checks supersede the earlier registration failure and pending verification entries. Phase 3 has not started.
+
+## Phase 3 — COMPLETED
+
+Added the bilingual browser course builder and protected authoring API. Instructors work on their own courses, Owners and Admins can work across courses, and guest and Student requests are denied. The builder supports independent Arabic and English metadata and content, ordering, draft preview, publication, republishing, withdrawal and archival. A separate database login executes only the scoped authoring command, which is owned by a non-superuser definer role with no login. Migration 0004 is additive and preserves the existing catalog reader and authentication grants. Complete publications create immutable snapshots and audit events. The public catalog only reads published metadata and omits withdrawn courses.
+
+Added Vitest validation and role tests, rollback-only database permission checks, and a Playwright builder test for two unrelated courses created through the UI. The isolated WSL runner retains its own volume and publishes no ports. Bash syntax, source syntax for non-JSX TypeScript and JavaScript, Compose configuration, and migration metadata received local static checks. The initial static checks were followed by the WSL acceptance runs below.
+
+
+### Phase 3 closure — 2026-11-23
+
+**Phase 3 is COMPLETED and closed.** The first isolated WSL run, `academy-builder-a4a526d15f64`, surfaced lint findings. After those fixes, the isolated rerun `academy-builder-a5499c4fd4e3` passed `bash infra/verify-phase3.sh`. Evidence was reviewed in `/tmp/azaly-phase3-verification.log`.
+
+| Check | Verified result |
+| --- | --- |
+| Quality and build | ESLint with zero warnings, Next.js route type generation, TypeScript, and the production build passed. |
+| Vitest | 13/13 tests passed. |
+| PostgreSQL | The additive authoring migration and migration replay passed. The rollback-only authoring permission checks passed. |
+| Runtime | The isolated production web container passed the authentication smoke checks, including Owner session persistence across restart and revocation on logout. |
+| Playwright regression | Identity and public portal suites passed 7/7. |
+| Playwright course builder | 1/1 passed. It verified author scope and browser-only creation and bilingual publication of independent courses, draft isolation, republishing, withdrawal, and archival. |
+
+The successful rerun supersedes the earlier lint failure and pending verification. Phase 4 has not started.
