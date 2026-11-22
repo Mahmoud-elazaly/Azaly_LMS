@@ -112,7 +112,7 @@ Git has staged Phase 1 files on `main` with no commits. The staged whitespace ch
 
 Reviewed `/tmp/azaly-phase1-verification.log` for project `academy-verify-7cbdea396bb0`. The Docker build reused a successful frozen-install layer, lint and typecheck passed, Vitest passed 3/3, and production builds completed. Playwright passed 5/5, covering bilingual direction and language switching, mobile overflow and browser errors, both themes, readiness, empty and localized catalog results, and draft exclusion. Drizzle migrations succeeded on the isolated PostgreSQL database and on repeat application. Both locale routes and both probes returned HTTP 200. The web process ran as non-root. Catalog permissions passed. Stopping PostgreSQL kept liveness at 200 and changed readiness to 503. After database container recreation and web restart, readiness returned 200 and the marker row survived. The verification volume was retained. Phase 1 is complete. Git still has no initial commit.
 
-## Phase 2 — In progress
+## Phase 2 — COMPLETED
 
 ### Identity schema and permission boundary
 
@@ -140,7 +140,7 @@ Slice 1 WSL evidence remains verified above. Completed bilingual login, registra
 
 Added Playwright coverage for both locales, failed login and logout, direct HTTP role denials, role and status revocation, expiry, and audit records. The isolated Phase 2 runner also verifies bootstrap, database permissions, the standalone production container, and session persistence across web restart. Email verification and recovery remain unavailable without mail delivery. Proxy client-IP and single-process rate-limit assumptions are documented in README.md.
 
-**Phase 2 remains open for runtime verification.** No packages were installed, no Docker runtime commands were executed in the sandbox, and no live volume was changed. The WSL lockfile refresh and acceptance commands are documented in README.md. Phase 3 has not started.
+At this checkpoint, Phase 2 was open for runtime verification. No packages were installed, no Docker runtime commands were executed in the sandbox, and no live volume was changed. The WSL lockfile refresh and acceptance commands are documented in README.md. Phase 3 has not started.
 
 ### Phase 2 registration smoke failure
 
@@ -153,3 +153,21 @@ The origin check runs after synchronous environment validation and pool construc
 The WSL rerun verified TCP authentication and identity grants, then logged a TypeError in request preparation before Better Auth handled registration. Next.js 16.4.5 wraps dynamic route requests in a Proxy. Node 24.22.3's Undici Request constructor accesses private Request fields when passed the existing request object. The Proxy does not carry those fields, so the initial `new Request(request, { headers })` fails before payload parsing. The string-body construction does not require a duplex option.
 
 The request builder now reads JSON through the incoming request's framework-supported accessor and constructs a fresh Request using its URL, copied headers, and the validated JSON string. Origin checks still run before preparation. A unit test uses a proxied streaming Request and checks field filtering, header preservation and malformed payload rejection. Syntax checks passed locally. The new Vitest test and isolated Phase 2 runtime rerun are pending on WSL.
+
+
+### Phase 2 closure — 2026-11-22
+
+**Phase 2 is COMPLETED and closed.** Reviewed the successful WSL Docker run of `bash infra/verify-phase2.sh` for isolated project `academy-auth-bc5e657777ab`, recorded in `/tmp/azaly-phase2-verification.log`.
+
+| Check | Verified result |
+| --- | --- |
+| Frozen dependency installation and production images | Passed |
+| ESLint and TypeScript | `eslint . --max-warnings=0` and `next typegen && tsc --noEmit` passed |
+| Vitest | 3 files, 10/10 tests passed |
+| Next.js production build | Passed |
+| PostgreSQL and Drizzle | Migrations passed twice. Rollback-only permission checks and the `academy_auth` TCP login and grants preflight passed. |
+| Auth login provisioning and Owner bootstrap | Provisioning passed. The first bootstrap created the Owner; the second preserved it. |
+| HTTP authentication smoke | Registration, duplicate response, sign-in, roles, CSRF rejection, and logout passed. The Owner session survived an app restart and logout revoked it. |
+| Playwright | 7/7 passed, including identity 2/2 and public portal 5/5. |
+
+The successful runtime and browser checks supersede the earlier registration failure and pending verification entries. Phase 3 has not started.
