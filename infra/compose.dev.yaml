@@ -1,0 +1,45 @@
+services:
+  dev:
+    build:
+      context: .
+      target: dev
+    environment:
+      DATABASE_URL: postgresql://academy_reader:${POSTGRES_READER_PASSWORD:?Set POSTGRES_READER_PASSWORD}@postgres:5432/academy
+      AUTH_DATABASE_URL: ${AUTH_DATABASE_URL:-}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [frontend, data]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./app:/app/app:ro
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  browser:
+    profiles: [test]
+    build:
+      context: .
+      target: browser
+    environment:
+      DATABASE_URL: postgresql://academy:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/academy
+      AUTH_DATABASE_URL: ${AUTH_DATABASE_URL:-}
+      BETTER_AUTH_URL: http://127.0.0.1:3100
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      AUTH_TEST_OWNER_PASSWORD: ${AUTH_TEST_OWNER_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [data]
+    volumes:
+      - ./app:/app/app:ro
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    init: true
+    shm_size: "256m"

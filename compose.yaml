@@ -1,0 +1,61 @@
+name: academy
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: academy
+      POSTGRES_USER: academy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_READER_PASSWORD: ${POSTGRES_READER_PASSWORD:?Set POSTGRES_READER_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/10-catalog-reader.sql:/docker-entrypoint-initdb.d/10-catalog-reader.sql:ro
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U academy -d academy"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+  migrate:
+    environment:
+      DATABASE_URL: postgresql://academy:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/academy
+    build:
+      context: .
+      target: migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [data]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  web:
+    environment:
+      DATABASE_URL: postgresql://academy_reader:${POSTGRES_READER_PASSWORD:?Set POSTGRES_READER_PASSWORD}@postgres:5432/academy
+      AUTH_DATABASE_URL: ${AUTH_DATABASE_URL:-}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+    build:
+      context: .
+      target: web
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks: [frontend, data]
+    ports:
+      - "127.0.0.1:3000:3000"
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/ready').then(r => { if (!r.ok) process.exitCode = 1 }).catch(() => { process.exitCode = 1 })"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 15s
+    restart: unless-stopped
+networks:
+  frontend:
+  data:
+    internal: true
+volumes:
+  postgres-data:

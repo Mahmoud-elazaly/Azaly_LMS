@@ -1,0 +1,48 @@
+{
+  "name": "it-engineering-academy",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.13 <25"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "auth:bootstrap-owner": "node scripts/identity-admin.mjs bootstrap",
+    "auth:provision-login": "node scripts/identity-admin.mjs provision"
+  },
+  "dependencies": {
+    "better-auth": "1.7.27",
+    "drizzle-orm": "0.45.2",
+    "next": "16.4.5",
+    "next-intl": "4.5.6",
+    "pg": "8.16.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.1.13"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.6",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "drizzle-kit": "0.31.7",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.4.5",
+    "postcss": "8.5.10",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "4.0.18",
+    "@next/env": "16.4.5"
+  }
+}

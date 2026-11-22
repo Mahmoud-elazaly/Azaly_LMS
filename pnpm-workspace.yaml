@@ -1,0 +1,7 @@
+# Build scripts are explicitly allowlisted for pnpm 11.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  '@parcel/watcher': true
+  '@swc/core@1.16.22': true

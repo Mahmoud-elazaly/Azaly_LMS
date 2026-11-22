@@ -1,0 +1,74 @@
+name: Foundation checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify the Docker development workflow
+        run: |
+          export POSTGRES_PASSWORD="$(openssl rand -hex 32)"
+          export POSTGRES_READER_PASSWORD="$(openssl rand -hex 32)"
+          dc() { docker compose -p academy-ci-test -f compose.yaml -f infra/compose.dev.yaml "$@"; }
+          trap 'dc down' EXIT
+
+          dc --profile test config --quiet
+          dc build dev
+          dc run --rm --no-deps dev sh -eu -c 'pnpm lint && pnpm typecheck && pnpm test'
+          dc up -d --wait postgres
+          dc run --rm dev sh -eu -c '
+            pnpm build
+            HOSTNAME=127.0.0.1 PORT=3100 node .next/standalone/server.js &
+            server_pid=$!
+            trap "kill $server_pid 2>/dev/null || true" EXIT
+            node --input-type=module -e "
+              const base = \"http://127.0.0.1:3100\";
+              for (let attempt = 0; attempt < 30; attempt++) {
+                const response = await fetch(base + \"/api/health\").catch(() => null);
+                if (response?.ok) {
+                  if ((await fetch(base + \"/api/ready\")).status !== 503) process.exit(1);
+                  process.exit(0);
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+              process.exit(1);
+            "
+          '
+          dc run --rm --build migrate
+          dc run --rm migrate
+          dc --profile test run --rm --build browser sh -eu -c 'pnpm build && pnpm test:e2e'
+      - name: Verify the self-hosted stack
+        env:
+          COMPOSE_PROJECT_NAME: academy-ci
+        run: |
+          export POSTGRES_PASSWORD="$(openssl rand -hex 32)"
+          export POSTGRES_READER_PASSWORD="$(openssl rand -hex 32)"
+          trap 'docker compose down' EXIT
+
+          docker compose up --build -d --wait
+          curl --fail --silent --show-error http://127.0.0.1:3000/api/ready
+
+          docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy <<'SQL'
+          INSERT INTO courses (slug) VALUES ('persistence-check');
+          SET ROLE academy_reader;
+          DO $privileges$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM courses WHERE slug = 'persistence-check') THEN
+              RAISE EXCEPTION 'Catalog reader cannot see the course';
+            END IF;
+            IF has_table_privilege(current_user, 'courses', 'INSERT, UPDATE, DELETE') THEN
+              RAISE EXCEPTION 'Catalog reader can modify courses';
+            END IF;
+          END;
+          $privileges$;
+          SQL
+
+          docker compose stop web postgres
+          docker compose rm -f postgres
+          docker compose up -d --wait
+          persisted=$(docker compose exec -T postgres psql -X -At -U academy -d academy \
+            -c "SELECT count(*) FROM courses WHERE slug = 'persistence-check'")
+          test "$persisted" = 1
+          curl --fail --silent --show-error http://127.0.0.1:3000/api/ready
