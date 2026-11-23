@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { draftQuestion, type DraftQuestion } from '../assessment/policy.ts';
 import { guidedTemplate, readyToPublishLab } from '../guided/policy.ts';
 import type { Role } from '../identity/policy';
 
@@ -11,22 +12,12 @@ const title = z.string().trim().max(160);
 const localized = <T extends z.ZodType>(value: T) => z.object({ ar: value.optional(), en: value.optional() });
 const block = z.object({
   id: z.uuid(),
-  type: z.enum(['paragraph', 'heading', 'code', 'callout']),
+  type: z.enum(['paragraph', 'heading', 'code', 'callout', 'markdown']),
   translations: localized(z.string().max(12000)),
 });
 const lesson = z.object({ id: z.uuid(), titles: localized(title), blocks: z.array(block).max(50) });
 const moduleSchema = z.object({ id: z.uuid(), titles: localized(title), lessons: z.array(lesson).max(40) });
-const question = z.object({
-  id: z.uuid(),
-  correct: z.number().int().min(0).max(3),
-  translations: localized(z.object({
-    prompt: title,
-    choices: z.array(z.string().trim().max(300)).min(2).max(4),
-    explanation: z.string().max(2000).optional(),
-  })),
-  bankSource: z.strictObject({ id: z.uuid(), tags: z.array(z.string().max(40)).max(12) }).optional(),
-});
-const quiz = z.object({ id: z.uuid(), titles: localized(title), questions: z.array(question).max(20) });
+const quiz = z.object({ id: z.uuid(), titles: localized(title), questions: z.array(draftQuestion).max(20) });
 export const documentSchema = z.strictObject({
   slug, position: z.number().int().min(0).max(100000),
   translations: localized(z.object({ title, summary: z.string().trim().max(3000) })),
@@ -49,6 +40,14 @@ export type CourseDocument = z.infer<typeof documentSchema>;
 export type CourseDraft = { id: string; version: number; visibility: 'draft' | 'published' | 'withdrawn'; document: CourseDocument };
 export type BuilderCourse = Pick<CourseDraft, 'id'> & Pick<CourseDocument, 'slug' | 'translations'>;
 
+function readyQuestion(question: DraftQuestion, locale: 'ar' | 'en') {
+  if (question.type === 'find_bug' || question.type === 'cli_recall') {
+    return Boolean(question.translations[locale]?.prompt.trim());
+  }
+  const text = question.translations[locale];
+  return Boolean(text?.prompt.trim() && text.choices.every((choice) => choice.trim()) && question.correct < text.choices.length);
+}
+
 export function canPublish(document: CourseDocument): boolean {
   if (!(document.guidedLabs ?? []).every(readyToPublishLab)) return false;
   const locales = (['ar', 'en'] as const).filter((locale) => {
@@ -61,7 +60,7 @@ export function canPublish(document: CourseDocument): boolean {
       quiz.questions.some((question) => {
         if (question.bankSource) return false;
         const text = question.translations[locale];
-        return text?.prompt.trim() || text?.choices.some((choice) => choice.trim());
+        return text?.prompt.trim() || (text && 'choices' in text && text.choices.some((choice) => choice.trim()));
       }));
   });
   return locales.length > 0 && document.modules.length > 0 && locales.every((locale) => {
@@ -71,10 +70,7 @@ export function canPublish(document: CourseDocument): boolean {
         lesson.titles[locale]?.trim() && lesson.blocks.length > 0 &&
         lesson.blocks.every((block) => block.translations[locale]?.trim())));
     const quizzesComplete = (document.quizzes ?? []).every((quiz) =>
-      quiz.titles[locale]?.trim() && quiz.questions.length > 0 && quiz.questions.every((question) => {
-        const text = question.translations[locale];
-        return text?.prompt.trim() && text.choices.every((choice) => choice.trim()) && question.correct < text.choices.length;
-      }));
+      quiz.titles[locale]?.trim() && quiz.questions.length > 0 && quiz.questions.every((question) => readyQuestion(question, locale)));
     return translation?.title.trim() && translation.summary.trim() && lessonsComplete && quizzesComplete;
   });
 }

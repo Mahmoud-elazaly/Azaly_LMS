@@ -2,40 +2,54 @@
 
 import { useState, type FormEvent } from 'react';
 import { assessmentCopy } from '@/features/assessment/copy';
-import { bankContent, type BankQuestion } from '@/features/assessment/policy';
+import { bankContent, recallModes, snippetLanguages, type BankQuestion } from '@/features/assessment/policy';
 import { direction, locales, type Locale } from '@/i18n/locales';
 import { postContent } from './content-request';
 
 type Labels = ReturnType<typeof assessmentCopy>;
+const questionTypes = ['mcq', 'find_bug', 'cli_recall'] as const;
+type QuestionType = typeof questionTypes[number];
 type QuestionMutation = { operation: 'create'; question: unknown }
   | { operation: 'save'; id: string; version: number; question: unknown }
   | { operation: 'archive'; id: string; version: number };
 
-function readQuestion(form: FormData, count: number) {
+function readQuestion(form: FormData, kind: QuestionType, count: number) {
   function translation(language: Locale) {
     return {
       prompt: form.get(`${language}-prompt`),
       explanation: form.get(`${language}-explanation`),
-      choices: Array.from({ length: count }, (_, index) => form.get(`${language}-choice-${index}`)),
+      ...(kind === 'mcq' && { choices: Array.from({ length: count }, (_, index) => form.get(`${language}-choice-${index}`)) }),
     };
   }
-  return bankContent.safeParse({
-    translations: { ar: translation('ar'), en: translation('en') },
-    correct: Number(form.get('correct')),
-    tags: String(form.get('tags') ?? '').split(/[,،]/).map((tag) => tag.trim()).filter(Boolean),
-  });
+  const translations = { ar: translation('ar'), en: translation('en') };
+  const tags = String(form.get('tags') ?? '').split(/[,،]/).map((tag) => tag.trim()).filter(Boolean);
+  if (kind === 'find_bug') {
+    const faultyLines = String(form.get('faultyLines') ?? '').split(/[,،]/).map((line) => Number(line.trim()));
+    return bankContent.safeParse({ type: kind, translations, tags, faultyLines,
+      snippet: form.get('snippet'), language: form.get('language') });
+  }
+  if (kind === 'cli_recall') {
+    return bankContent.safeParse({ type: kind, translations, tags,
+      rule: { mode: form.get('mode'), value: form.get('value') } });
+  }
+  return bankContent.safeParse({ translations, tags, correct: Number(form.get('correct')) });
 }
 
 function QuestionForm({ question, text, pending, save, invalid }: {
   question?: BankQuestion; text: Labels; pending: boolean;
   save: (input: QuestionMutation) => void; invalid: () => void;
 }) {
-  const [count, setCount] = useState(question?.translations.en.choices.length ?? 2);
+  const [kind, setKind] = useState<QuestionType>(question?.type ?? 'mcq');
+  const mcq = question && question.type !== 'find_bug' && question.type !== 'cli_recall' ? question : undefined;
+  const bug = question?.type === 'find_bug' ? question : undefined;
+  const cli = question?.type === 'cli_recall' ? question : undefined;
+  const [count, setCount] = useState(mcq?.translations.en.choices.length ?? 2);
+  const [mode, setMode] = useState(cli?.rule.mode ?? 'exact');
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
-    const content = readQuestion(new FormData(event.currentTarget), count);
+    const content = readQuestion(new FormData(event.currentTarget), kind, count);
     if (!content.success) { invalid(); return; }
     save(question
       ? { operation: 'save', id: question.id, version: question.version, question: content.data }
@@ -44,25 +58,50 @@ function QuestionForm({ question, text, pending, save, invalid }: {
 
   return <form className="builder-fields" method="post" action="/api/question-bank" onSubmit={submit}>
     <fieldset className="builder-fields" disabled={pending || question?.archived}>
-      <label>{text.choiceCount}<select value={count} onChange={(event) => setCount(Number(event.target.value))}>
-        {[2, 3, 4].map((option) => <option key={option}>{option}</option>)}
+      <label>{text.type}<select value={kind} onChange={(event) => {
+        const selected = questionTypes.find((type) => type === event.target.value);
+        if (selected) setKind(selected);
+      }}>
+        {questionTypes.map((type) => <option key={type} value={type}>{text[type]}</option>)}
       </select></label>
+      {kind === 'mcq' && <label>{text.choiceCount}<select value={count} onChange={(event) => setCount(Number(event.target.value))}>
+        {[2, 3, 4].map((option) => <option key={option}>{option}</option>)}
+      </select></label>}
       {locales.map((language) => {
         const content = question?.translations[language];
         return <fieldset className="notice builder-fields" key={language} lang={language} dir={direction(language)}>
           <legend>{language === 'ar' ? 'العربية' : 'English'}</legend>
           <label>{assessmentCopy(language).prompt}<input name={`${language}-prompt`} defaultValue={content?.prompt}
             required maxLength={160} /></label>
-          {Array.from({ length: count }, (_, index) => <label key={index}>{assessmentCopy(language).choice} {index + 1}
-            <input name={`${language}-choice-${index}`} defaultValue={content?.choices[index]} required maxLength={300} />
+          {kind === 'mcq' && Array.from({ length: count }, (_, index) => <label key={index}>{assessmentCopy(language).choice} {index + 1}
+            <input name={`${language}-choice-${index}`} defaultValue={mcq?.translations[language].choices[index]} required maxLength={300} />
           </label>)}
           <label>{assessmentCopy(language).explanation}<textarea name={`${language}-explanation`} defaultValue={content?.explanation}
             rows={3} required maxLength={2000} /></label>
         </fieldset>;
       })}
-      <label>{text.correct}<select name="correct" defaultValue={question?.correct ?? 0}>
+      {kind === 'mcq' && <label>{text.correct}<select name="correct" defaultValue={mcq?.correct ?? 0}>
         {Array.from({ length: count }, (_, index) => <option key={index} value={index}>{index + 1}</option>)}
-      </select></label>
+      </select></label>}
+      {kind === 'find_bug' && <>
+        <label>{text.language}<select name="language" dir="ltr" defaultValue={bug?.language ?? 'config'}>
+          {snippetLanguages.map((language) => <option key={language}>{language}</option>)}
+        </select></label>
+        <label>{text.snippet}<textarea name="snippet" className="snippet-editor" dir="ltr" translate="no"
+          rows={6} required maxLength={8000} defaultValue={bug?.snippet} spellCheck={false} /></label>
+        <label>{text.faultyLines}<input name="faultyLines" dir="ltr" required defaultValue={bug?.faultyLines.join(', ')} /></label>
+      </>}
+      {kind === 'cli_recall' && <>
+        <label>{text.rule}<select name="mode" value={mode} onChange={(event) => {
+          const selected = recallModes.find((rule) => rule === event.target.value);
+          if (selected) setMode(selected);
+        }}>
+          {recallModes.map((rule) => <option key={rule} value={rule}>{text[rule]}</option>)}
+        </select></label>
+        <label>{text.expected}<input name="value" dir="ltr" translate="no" className="cli-field"
+          required maxLength={512} defaultValue={cli?.rule.value} spellCheck={false} /></label>
+        {mode === 'flags' && <p>{text.flagsHint}</p>}
+      </>}
       <label>{text.tags}<input name="tags" dir="auto" defaultValue={question?.tags.join(', ')} maxLength={492} /></label>
       {!question?.archived && <div className="builder-controls">
         <button className="identity-button" type="submit">{text.save}</button>

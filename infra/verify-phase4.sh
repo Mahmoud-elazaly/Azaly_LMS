@@ -15,6 +15,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
     export LAB_CONTROL_SUBNET="$(phase7_control_subnet)"
     export REAL_LAB_BRIDGE_URL=http://lab-bridge:8400
   fi
+  if [[ "${PHASE8_TEST:-}" == 1 ]]; then source infra/verify-phase8-support.sh; fi
   project="$prefix-$(openssl rand -hex 6)"
   container="$project-web"
   dc() { docker compose -p "$project" "${compose_files[@]}" "$@"; }
@@ -56,6 +57,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
   dc run --rm --no-deps dev sh -eu -c 'pnpm lint && pnpm typecheck && pnpm test && pnpm build'
   dc up -d --wait postgres
   if [[ "${PHASE7_TEST:-}" == 1 ]]; then phase7_upgrade; else dc run --rm --build migrate; fi
+  if [[ "${PHASE8_TEST:-}" == 1 ]]; then phase8_upgrade; fi
   dc run --rm migrate
   dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy \
     < tests/integration/identity-permissions.sql
@@ -102,6 +104,9 @@ JS
     dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase7-permissions.sql
     phase7_start_services
   fi
+  if [[ "${PHASE8_TEST:-}" == 1 ]]; then
+    dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase8-permissions.sql
+  fi
   dc run -d --no-deps --name "$container" web
   wait_for_app() {
     local attempt
@@ -126,6 +131,7 @@ JS
     if [ "${PHASE5_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase5.spec.ts; fi
     if [ "${PHASE6_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase6.spec.ts; fi
     if [ "${PHASE7_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase7.spec.ts; fi
+    if [ "${PHASE8_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase8.spec.ts; fi
   '
   docker rm "$project-browser" >/dev/null
   if [[ "${PHASE6_TEST:-}" == 1 ]]; then

@@ -1,11 +1,11 @@
 # Codex handoff | Azaly LMS
 
-Last reviewed **2026-11-23**. Repository `/home/azaly/Azaly-LMS`. The handoff reflects the current workspace and the available WSL verification logs. Use [PLANS.md](PLANS.md) for formal phase status and historical evidence, [ROADMAP.md](ROADMAP.md) for gates, and [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md) for required checks. Read [AGENTS.md](AGENTS.md) and the [Hybrid Architecture MVP blueprint](IT_Engineering_Academy_Hybrid_Architecture_MVP.md) before changing scope.
+Last reviewed **2026-11-24**. Repository `/home/azaly/Azaly-LMS`. The handoff reflects the current workspace and the available WSL verification logs. Use [PLANS.md](PLANS.md) for formal phase status and historical evidence, [ROADMAP.md](ROADMAP.md) for gates, and [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md) for required checks. Read [AGENTS.md](AGENTS.md) and the [Hybrid Architecture MVP blueprint](IT_Engineering_Academy_Hybrid_Architecture_MVP.md) before changing scope.
 
 ## Where to resume
 
-- **Phases 0–6 are complete.** The published `v0.5.0` baseline is commit `b977aba` on `main`.
-- **Phase 7 adds the isolated NGINX pilot for v0.6.0.** See the [operator setup](README.md#enable-the-nginx-real-lab-pilot) and [acceptance evidence](PLANS.md#phase-7--isolated-nginx-real-lab-pilot).
+- **Phases 0–7 are complete.** The published `v0.6.0` baseline is commit `4056694`.
+- **Phase 8 adds diagrams, extended assessment types, and draft import for v0.7.0.** See the [importer instructions](README.md#import-a-markdown-course) and [acceptance evidence](PLANS.md#phase-8--lesson-diagrams-assessments-and-course-import).
 
 ## Project and architecture
 
@@ -31,7 +31,8 @@ Guided Labs are intended for learner-managed infrastructure with explicit comple
 | 5 | WSL gate passed. Scoped question bank, versioned course copies, Guided Lab authoring and attempts, and an instructor review queue. Gate evidence is in PLANS.md. |
 | 6 | Curated Prometheus and Grafana learning path. |
 | 7 | Opt-in isolated NGINX Real Lab pilot. |
-| 8 | Restore drills, monitoring, capacity and security hardening before external enrollment. |
+| 8 | Mermaid lesson diagrams, line and CLI assessments, and deterministic Markdown/ZIP import. |
+| 9–10 | Knowledge graph and mastery analytics, then the server-side mock technical interviewer. |
 
 ### Role and publishing decisions
 
@@ -110,7 +111,7 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
 ## Known limitations and open items
 
-- GitHub CI runs `bash infra/verify.sh` for the full platform gate, including the Phase 6 bilingual course journey and Phase 7 worker isolation checks.
+- GitHub CI runs `bash infra/verify.sh` for the full platform gate, including the Phase 8 importer, learner assessment, and diagram checks.
 - `/api/health` signals process liveness. `/api/ready` currently checks the catalog pool and catalog schema only. A healthy response alone does not validate auth, authoring, or learner credentials.
 - Better Auth sign-in limits are per process. Invitation activation and management limits use PostgreSQL. Terminate TLS through a trusted proxy that overwrites `X-Academy-Client-IP` with the verified client IP and keeps the web port private. Requests without a usable address share the loopback bucket. See [invitation setup](README.md#provision-accounts-by-invitation) for mail configuration.
 - Switching language preserves the selected draft or enrollment and translates validated sign-in return paths.
@@ -139,7 +140,7 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
    Review the actual diff and new files. Stage and commit only with authorization. If the managed Codex sandbox reports a read-only `.git` directory or denied Docker socket, use the WSL host session. Keep existing volumes and project names. Avoid volume-removal flags.
 3. **For a separately authorized deployment**, follow [README.md](README.md#phase-4-learner-experience-on-wsl) to migrate and provision the learner login against the intended existing project. Update the environment and recreate its web container. Verify both HTTP probes and exercise a real authenticated learner flow. Do not reuse test passwords or restore test fixtures into an existing deployment.
-4. **Review the Phase 7 gate evidence in PLANS.md.** Review the controller deployment boundary, the verified-provenance writes, and the cleanup evidence before merging.
+4. **Use the A-to-Z delivery workflow in AGENTS.md.** Review the Phase 8 gate evidence before arming auto-merge.
 
 ## Keeping this handoff current
 

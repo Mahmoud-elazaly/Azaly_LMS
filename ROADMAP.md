@@ -10,4 +10,8 @@
 | 5 | Assessments and Guided Labs with explicit completion provenance |
 | 6 | Complete curated Prometheus and Grafana learning path reviewed |
 | 7 | Isolated NGINX Real Lab pilot passes lifecycle and isolation gates |
-| 8 | Restore drill, monitoring, load and security evidence before external enrollment |
+| 8 (`v0.7.0`) | Mermaid lesson diagrams, `find_bug` and `cli_recall` questions, and the Deterministic Markdown/ZIP Importer |
+| 9 (`v0.8.0`) | Cross-Track Knowledge Graph & Mastery Analytics |
+| 10 (`v0.9.0`) | Server-Side AI Mock Technical Interviewer |
+
+Restore, monitoring, load and security checks remain prerequisites for external enrollment.

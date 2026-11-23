@@ -262,3 +262,54 @@ Open the NGINX lab through My learning or visit `/ar/real-lab` or `/en/real-lab`
 For a deployment, build the `lab-sandbox` and `lab-controller` image targets on the dedicated Docker worker. Configure the controller with `LAB_SANDBOX_IMAGE` set to the approved local image ID, a deployment-specific `LAB_NAMESPACE`, and the shared `LAB_CONTROLLER_SECRET`. Mount the Docker socket only into the controller. Forward controller port 8401 through a private HTTPS ingress, restrict ingress to the bridge, and set the bridge's `LAB_CONTROLLER_URL` to that HTTPS origin. Run the bridge from `infra/compose.lab.yaml` without the `lab-local` profile. Enable the web workspace with `REAL_LAB_BRIDGE_URL=http://lab-bridge:8400`. Configure log collection for cleanup failure messages and investigate if repeated cleanup attempts fail.
 
 Run `bash infra/verify.sh` for the cumulative local and CI gate. See [Phase 7 acceptance](ACCEPTANCE_TESTS.md#phase-7-isolated-nginx-pilot).
+
+## Import a Markdown course
+
+Use `pnpm course:import --dry-run SOURCE` to validate a package and print its content counts and warnings as JSON. A dry run works without an authoring database connection. A standalone Markdown file starts with a level-one heading and uses `--slug` and `--locale ar|en` to set its course identity and language.
+
+```bash
+pnpm course:import --dry-run lesson.md --slug nginx-routing --locale en
+pnpm course:import --dry-run course.zip
+```
+
+A ZIP has a root `course.json`. Use stable keys for modules, lessons, and quiz questions so repeated imports preserve their IDs. Each lesson maps its translations to separate UTF-8 Markdown files.
+
+```json
+{
+  "slug": "nginx-routing",
+  "translations": {
+    "en": { "title": "NGINX routing", "summary": "Follow the request to its upstream." }
+  },
+  "modules": [{
+    "key": "routing",
+    "titles": { "en": "Routing" },
+    "lessons": [{
+      "key": "upstream",
+      "titles": { "en": "Upstreams" },
+      "markdown": { "en": "lessons/upstream.en.md" }
+    }]
+  }]
+}
+```
+
+Use an `ar` counterpart at each level for a bilingual course. A lesson's `mermaid` code fences render as diagrams with pan, zoom, and source fallback. The archive can also declare a `quizzes` array of keys such as `["review"]`. Each key maps to `quizzes/<key>.quiz.json` with localized `titles` and an ordered `questions` array, and `quizzes/<key>.answers.json` with an answer object per question key. Use these fields for each question kind.
+
+| Kind | Question fields in addition to `key` and `translations` | Matching answer object |
+| --- | --- | --- |
+| Multiple choice | Localized `choices` in each translation and optional `type: "mcq"` | `{"correct": 0}` |
+| Find the bug | `type: "find_bug"`, `language` (`config`, `yaml`, `dockerfile`, `promql`, or `nginx`), and `snippet` | `{"faultyLines": [2, 4]}` |
+| CLI recall | `type: "cli_recall"` | `{"rule": {"mode": "exact", "value": "kubectl get pods"}}` |
+
+Question translations each contain a `prompt` and can include a private `explanation`. CLI rules accept `exact`, `flags`, or `regex`. Exact and flags modes normalize whitespace outside quotes. Flags mode allows independent flags in any order, preserves positional argument order and honors the `--` delimiter. Use `--flag=value` for flags with values. Regex mode matches the normalized command as a whole using a bounded pattern without lookaround or backreferences.
+
+The importer reports ignore-filter matches, binary artifacts, unmapped files, and missing or unmatched quiz pairs as warnings. An unmatched pair is skipped. Resolve any structural errors reported by dry run before applying.
+
+To apply, configure `AUTHORING_DATABASE_URL` for the existing authoring login and pass the raw token of a live staff session in a private `COURSE_IMPORT_SESSION_TOKEN` environment variable. For the Docker development setup, pass the variable by name and mount the input read-only.
+
+```bash
+docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml run --rm --no-deps \
+  -e COURSE_IMPORT_SESSION_TOKEN -v "$PWD/course.zip:/inputs/course.zip:ro" \
+  dev pnpm course:import --apply /inputs/course.zip
+```
+
+Review the resulting draft in the existing course builder and publish from there. Reapplying the same source to an unchanged imported draft returns `unchanged`. Changed sources update only that draft. A `draft_conflict` means the target draft has staff edits or belongs to a different authoring workflow.

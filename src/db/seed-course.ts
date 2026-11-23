@@ -5,7 +5,7 @@ import type { CourseDocument } from '../features/authoring/policy';
 type Seed = {
   id: string;
   document: CourseDocument;
-  questions: BankQuestion[];
+  questions: Extract<BankQuestion, { correct: number }>[];
 };
 type Stage = 'draft' | 'publish';
 

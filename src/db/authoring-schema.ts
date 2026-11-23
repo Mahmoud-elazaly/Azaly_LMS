@@ -10,6 +10,7 @@ export const drafts = authoring.table('drafts', {
   document: jsonb().notNull(),
   editVersion: integer('edit_version').notNull().default(1),
   archivedAt: timestamp('archived_at', { withTimezone: true }),
+  lastImportDigest: text('last_import_digest'),
 });
 
 export const snapshots = authoring.table('snapshots', {

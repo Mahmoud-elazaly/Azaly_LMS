@@ -1,6 +1,6 @@
 {
   "name": "azaly-lms",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "packageManager": "pnpm@11.9.0",
   "engines": {
@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
+    "course:import": "node scripts/import-course.ts",
     "db:seed:prometheus-grafana": "node scripts/seed-prometheus-grafana.mjs",
     "db:migrate": "drizzle-kit migrate",
     "auth:bootstrap-owner": "node scripts/identity-admin.mjs bootstrap",
@@ -23,11 +24,14 @@
   "dependencies": {
     "better-auth": "1.7.27",
     "drizzle-orm": "0.45.2",
+    "mermaid": "12.3.0",
     "next": "16.4.5",
     "next-intl": "4.5.6",
     "pg": "8.16.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-markdown": "10.1.0",
+    "yauzl": "3.4.0",
     "zod": "4.1.13"
   },
   "devDependencies": {
@@ -37,6 +41,7 @@
     "@types/pg": "8.15.6",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
+    "@types/yauzl": "3.4.0",
     "drizzle-kit": "0.31.7",
     "eslint": "9.39.1",
     "eslint-config-next": "16.4.5",
