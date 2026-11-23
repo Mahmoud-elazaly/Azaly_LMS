@@ -10,16 +10,18 @@ Read the Hybrid Architecture MVP blueprint and PLANS.md before changing scope. U
 
 ## Builds and releases
 
-- Set the release version in `package.json`. Both locale footers read that value at build time. Use a patch bump for fixes, a minor bump for features, and a major bump for a breaking release. With explicit operator approval, tag the release commit `v<version>` and push the tag.
-- Before publishing, run `bash infra/verify.sh` and record the observed results in `PLANS.md`. Check GitHub Actions **Foundation checks** for the release commit. The workflow builds and tests the Docker stack from the pushed revision. [GitHub workflow](.github/workflows/ci.yml)
+- Set the release version in `package.json`. Both locale footers read that value at build time. Use a patch bump for fixes, a minor bump for features, and a major bump for a breaking release. On a push to `main`, GitHub Actions validates the version and publishes an annotated tag and a GitHub Release when the version is untagged. [Release workflow](.github/workflows/release.yml)
+- Before publishing, run `bash infra/verify.sh` and record the observed results in `PLANS.md`. Require the **Foundation checks** `verify` job on the PR. The workflow builds and tests the Docker stack from the pushed revision. [CI workflow](.github/workflows/ci.yml)
 - Rebuild the local development stack from the updated checkout with `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml up -d --build --wait dev`. Check `/api/health`, `/api/ready`, and the version displayed on `/ar` and `/en`. Use the existing Compose project and volume. [Self-hosted deployment instructions](README.md#self-hosted-deployment)
 
 ## Autonomous delivery workflow
 
-- Always work on a dedicated feature branch, such as `feat/<scope>` or `fix/<scope>`. Never push directly to `main` or force-push. Create release tags only with explicit operator approval.
-- When a new phase adds verification gates, update `infra/verify.sh` to invoke the new full platform gate. Use that entrypoint in CI and locally.
-- Run `bash infra/verify.sh` yourself and iterate until it exits 0. Never weaken, skip, or delete existing tests, database permission checks, or security assertions to make the gate pass.
-- Record the commands you ran and the results you observed in `PLANS.md`.
-- Apply additive migrations with `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml run --rm --build migrate`. Rebuild with `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml up -d --build --wait dev`. Verify `/api/health`, `/api/ready`, and the displayed version on `/ar` and `/en`. Preserve `academy-dev_postgres-data`.
-- Commit all reviewed changes on the feature branch and push that branch to `origin`. If `gh` is installed and authenticated, open a PR targeting `main` with `gh pr create --base main` and watch **Foundation checks** with `gh pr checks --watch`. If CI fails, inspect the failed run with `gh run view <run-id> --log-failed`, fix the failure, rerun `bash infra/verify.sh`, and push the fix.
-- Stop for human review and merge. Report the PR URL if available, the changed files, and the verification results.
+1. Switch to `main` and run `git pull --ff-only origin main`. Create a dedicated feature branch from that commit and implement the requested scope. Never push directly to `main` or force-push.
+2. Run `bash infra/verify.sh` locally and iterate until it exits 0. Never weaken, skip, or delete earlier tests, database permission checks, or security invariants. When a phase adds checks, update the same entrypoint for local use and CI. Record observed commands and results in `PLANS.md`.
+3. Commit the reviewed changes, push the feature branch to `origin`, and open a PR with `gh pr create --base main`.
+4. Arm auto-merge with `gh pr merge --auto --merge --delete-branch`. If the PR is already `CLEAN` with its required checks passed, use `gh pr merge --merge --delete-branch`. Never use `--admin` or bypass CI rules.
+5. Watch `gh pr checks --watch`. If CI fails, inspect `gh run view <run-id> --log-failed`, fix the failure, rerun `bash infra/verify.sh` to exit 0, commit and push the fix, and watch the new checks. Re-arm auto-merge if needed. Stop and report if CI still fails after three fix retries.
+6. After CI passes, poll `gh pr view --json state --jq .state` for up to 120 seconds for `MERGED`. If the PR is still unmerged, report the blocker and retain the feature branch.
+7. Once merged, switch to `main`, run `git pull --ff-only origin main && git fetch --tags --prune`, and delete the local feature branch with `git branch -d` if it still exists.
+8. If the change adds migrations, apply them with `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml run --rm --build migrate`. Rebuild with `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml up -d --build --wait dev`, retaining any active Compose overrides and the `academy-dev_postgres-data` volume.
+9. Confirm HTTP 200 from `http://127.0.0.1:3000/api/health` and `http://127.0.0.1:3000/api/ready`. Check the displayed version on `/ar` and `/en`. Confirm the release tag exists on `origin` and the GitHub Release is published. Report the PR URL, merge commit SHA, release tag, and health check results.

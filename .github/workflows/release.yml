@@ -1,0 +1,50 @@
+name: Release
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+concurrency:
+  group: auto-release-main
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Publish the package version if untagged
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(node <<'NODE'
+          const { version } = require('./package.json');
+          const integer = '(?:0|[1-9][0-9]*)';
+          const prerelease = `(?:${integer}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)`;
+          const build = '[0-9A-Za-z-]+';
+          const pattern = new RegExp(
+            `^${integer}\\.${integer}\\.${integer}(?:-${prerelease}(?:\\.${prerelease})*)?(?:\\+${build}(?:\\.${build})*)?$`,
+          );
+          if (typeof version !== 'string' || pattern.exec(version)?.[0] !== version) {
+            console.error('::error::package.json version must be valid SemVer.');
+            process.exit(1);
+          }
+          console.log(version);
+          NODE
+          )"
+
+          TAG="v${VERSION}"
+          TAG_REF="refs/tags/${TAG}"
+          if git show-ref --verify --quiet "$TAG_REF"; then
+            printf 'Tag %s already exists.\n' "$TAG"
+            exit 0
+          fi
+
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            tag --annotate "$TAG" "$GITHUB_SHA" --message "Release $TAG"
+          git push origin "$TAG_REF"
+          gh release create "$TAG" --verify-tag --title "Release $TAG" --generate-notes
