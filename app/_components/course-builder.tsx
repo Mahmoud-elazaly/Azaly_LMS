@@ -2,6 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import { assessmentCopy } from '@/features/assessment/copy';
+import { importBankQuestion, type BankQuestion } from '@/features/assessment/policy';
+import { GuidedLabFields } from './guided-lab-authoring';
+import { OrderedControls, replace } from './ordered-fields';
 import { builderCopy } from '@/features/authoring/copy';
 import type { CourseDocument, CourseDraft, Mutation } from '@/features/authoring/policy';
 import { direction, type Locale } from '@/i18n/locales';
@@ -56,28 +60,6 @@ export function CourseCreator({ locale }: { locale: Locale }) {
   </form>;
 }
 
-function replace<T>(items: T[], index: number, value: T) {
-  return items.map((item, at) => at === index ? value : item);
-}
-
-function OrderedControls<T>({ items, index, onChange, text }: {
-  items: T[]; index: number; onChange: (value: T[]) => void; text: Labels;
-}) {
-  function move(offset: number) {
-    const next = [...items];
-    const destination = index + offset;
-    if (destination < 0 || destination >= next.length) return;
-    [next[index], next[destination]] = [next[destination], next[index]];
-    onChange(next);
-  }
-
-  return <div className="builder-controls">
-    <button type="button" className="identity-button" disabled={index === 0} onClick={() => move(-1)}>{text.moveUp}</button>
-    <button type="button" className="identity-button" disabled={index === items.length - 1} onClick={() => move(1)}>{text.moveDown}</button>
-    <button type="button" className="identity-button" onClick={() => onChange(items.filter((_, at) => at !== index))}>{text.remove}</button>
-  </div>;
-}
-
 function LessonEditor({ lesson, language, text, onChange }: {
   lesson: Lesson; language: Locale; text: Labels; onChange: (value: Lesson) => void;
 }) {
@@ -106,20 +88,20 @@ function LessonEditor({ lesson, language, text, onChange }: {
   </div>;
 }
 
-function ModuleEditor({ module, language, text, onChange }: {
-  module: Module; language: Locale; text: Labels; onChange: (value: Module) => void;
+function ModuleEditor({ courseModule, language, text, onChange }: {
+  courseModule: Module; language: Locale; text: Labels; onChange: (value: Module) => void;
 }) {
-  function setLessons(lessons: Lesson[]) { onChange({ ...module, lessons }); }
+  function setLessons(lessons: Lesson[]) { onChange({ ...courseModule, lessons }); }
   return <div className="builder-fields">
-    <label>{text.moduleTitle}<input dir={direction(language)} value={module.titles[language] ?? ''}
-      onChange={(event) => onChange({ ...module, titles: { ...module.titles, [language]: event.target.value } })} /></label>
-    {module.lessons.map((lesson, index) => <div key={lesson.id} className="builder-fields">
+    <label>{text.moduleTitle}<input dir={direction(language)} value={courseModule.titles[language] ?? ''}
+      onChange={(event) => onChange({ ...courseModule, titles: { ...courseModule.titles, [language]: event.target.value } })} /></label>
+    {courseModule.lessons.map((lesson, index) => <div key={lesson.id} className="builder-fields">
       <LessonEditor lesson={lesson} language={language} text={text}
-        onChange={(value) => setLessons(replace(module.lessons, index, value))} />
-      <OrderedControls items={module.lessons} index={index} onChange={setLessons} text={text} />
+        onChange={(value) => setLessons(replace(courseModule.lessons, index, value))} />
+      <OrderedControls items={courseModule.lessons} index={index} onChange={setLessons} text={text} />
     </div>)}
     <button type="button" className="identity-button" onClick={() => setLessons([
-      ...module.lessons, { id: crypto.randomUUID(), titles: {}, blocks: [] },
+      ...courseModule.lessons, { id: crypto.randomUUID(), titles: {}, blocks: [] },
     ])}>{text.addLesson}</button>
   </div>;
 }
@@ -138,8 +120,8 @@ function DocumentFields({ document, setDocument, language, text }: {
       onChange={(event) => setTranslation('title', event.target.value)} /></label>
     <label>{text.summary}<textarea rows={3} dir={direction(language)} value={translation.summary}
       onChange={(event) => setTranslation('summary', event.target.value)} /></label>
-    {document.modules.map((module, index) => <div key={module.id} className="notice builder-fields">
-      <ModuleEditor module={module} language={language} text={text}
+    {document.modules.map((courseModule, index) => <div key={courseModule.id} className="notice builder-fields">
+      <ModuleEditor courseModule={courseModule} language={language} text={text}
         onChange={(value) => setModules(replace(document.modules, index, value))} />
       <OrderedControls items={document.modules} index={index} onChange={setModules} text={text} />
     </div>)}
@@ -151,48 +133,67 @@ function DocumentFields({ document, setDocument, language, text }: {
 
 type Quiz = NonNullable<CourseDocument['quizzes']>[number];
 
-function QuizEditor({ quiz, language, text, onChange }: {
-  quiz: Quiz; language: Locale; text: Labels; onChange: (quiz: Quiz) => void;
+function QuizEditor({ quiz, language, text, locale, bank, onChange }: {
+  quiz: Quiz; language: Locale; text: Labels; locale: Locale; bank: BankQuestion[]; onChange: (quiz: Quiz) => void;
 }) {
+  const bankText = assessmentCopy(locale);
+  const [selectedBankId, setSelectedBankId] = useState('');
+  const selectedBankQuestion = bank.find(({ id }) => id === selectedBankId);
   function setQuestions(questions: Quiz['questions']) { onChange({ ...quiz, questions }); }
 
   return <div className="notice builder-fields">
     <label>{text.quizTitle}<input dir={direction(language)} value={quiz.titles[language] ?? ''}
       onChange={(event) => onChange({ ...quiz, titles: { ...quiz.titles, [language]: event.target.value } })} /></label>
     {quiz.questions.map((question, index) => {
-      const current = question.translations[language] ?? { prompt: '', choices: ['', ''] };
+      const current = question.translations[language] ?? { prompt: '', choices: ['', ''], explanation: '' };
       function setTranslation(translation: typeof current) {
         setQuestions(replace(quiz.questions, index, { ...question, translations: { ...question.translations, [language]: translation } }));
       }
       return <div key={question.id} className="builder-fields">
-        <label>{text.questionPrompt}<input dir={direction(language)} value={current.prompt}
+        <label>{text.questionPrompt}<input dir={direction(language)} value={current.prompt} readOnly={Boolean(question.bankSource)}
           onChange={(event) => setTranslation({ ...current, prompt: event.target.value })} /></label>
         {current.choices.map((choice, at) => <label key={at}>{text.choice} {at + 1}
-          <input dir={direction(language)} value={choice}
+          <input dir={direction(language)} value={choice} readOnly={Boolean(question.bankSource)}
             onChange={(event) => setTranslation({ ...current, choices: replace(current.choices, at, event.target.value) })} />
         </label>)}
-        <label>{text.correctChoice}<select value={question.correct} onChange={(event) => setQuestions(
+        <label>{text.correctChoice}<select value={question.correct} disabled={Boolean(question.bankSource)} onChange={(event) => setQuestions(
           replace(quiz.questions, index, { ...question, correct: Number(event.target.value) }),
         )}>
           {current.choices.map((_, at) => <option key={at} value={at}>{at + 1}</option>)}
         </select></label>
+        {question.bankSource && <p>{bankText.imported}</p>}
+        {current.explanation && <p dir={direction(language)}>{current.explanation}</p>}
         <OrderedControls items={quiz.questions} index={index} onChange={setQuestions} text={text} />
       </div>;
     })}
-    <button type="button" className="identity-button" onClick={() => setQuestions([
+    {bank.length === 0 ? <p>{bankText.noImport}</p> : <div className="builder-fields">
+      <label>{bankText.choose}<select value={selectedBankId} onChange={(event) => setSelectedBankId(event.target.value)}>
+        <option value="">—</option>
+        {bank.map((item) => <option value={item.id} key={item.id}>{item.translations[language].prompt}</option>)}
+      </select></label>
+      <button className="identity-button" type="button" disabled={!selectedBankQuestion || quiz.questions.length >= 20}
+        onClick={() => {
+          if (selectedBankQuestion) {
+            setQuestions([...quiz.questions, importBankQuestion(selectedBankQuestion, crypto.randomUUID())]);
+            setSelectedBankId('');
+          }
+        }}>{bankText.import}</button>
+    </div>}
+    <button type="button" className="identity-button" disabled={quiz.questions.length >= 20} onClick={() => setQuestions([
       ...quiz.questions, { id: crypto.randomUUID(), correct: 0, translations: {} },
     ])}>{text.addQuestion}</button>
   </div>;
 }
 
-function QuizFields({ document, setDocument, language, text }: {
+function QuizFields({ document, setDocument, language, text, locale, bank }: {
   document: CourseDocument; setDocument: Dispatch<SetStateAction<CourseDocument>>; language: Locale; text: Labels;
+  locale: Locale; bank: BankQuestion[];
 }) {
   const quizzes = document.quizzes ?? [];
   function setQuizzes(next: Quiz[]) { setDocument({ ...document, quizzes: next }); }
   return <>
     {quizzes.map((quiz, index) => <div className="builder-fields" key={quiz.id}>
-      <QuizEditor quiz={quiz} language={language} text={text}
+      <QuizEditor quiz={quiz} language={language} text={text} locale={locale} bank={bank}
         onChange={(value) => setQuizzes(replace(quizzes, index, value))} />
       <OrderedControls items={quizzes} index={index} onChange={setQuizzes} text={text} />
     </div>)}
@@ -209,9 +210,9 @@ function DraftPreview({ document, locale, heading }: { document: CourseDocument;
     <article lang={locale} dir={direction(locale)}>
       <h2>{translation?.title}</h2>
       <p>{translation?.summary}</p>
-      {document.modules.map((module) => <section key={module.id}>
-        <h3>{module.titles[locale]}</h3>
-        {module.lessons.map((lesson) => <section key={lesson.id}>
+      {document.modules.map((courseModule) => <section key={courseModule.id}>
+        <h3>{courseModule.titles[locale]}</h3>
+        {courseModule.lessons.map((lesson) => <section key={lesson.id}>
           <h4>{lesson.titles[locale]}</h4>
           {lesson.blocks.map((block) => {
             const value = block.translations[locale];
@@ -226,7 +227,7 @@ function DraftPreview({ document, locale, heading }: { document: CourseDocument;
   </details>;
 }
 
-export function CourseEditor({ locale, draft }: { locale: Locale; draft: CourseDraft }) {
+export function CourseEditor({ locale, draft, bank }: { locale: Locale; draft: CourseDraft; bank: BankQuestion[] }) {
   const router = useRouter();
   const text = builderCopy(locale);
   const [language, setLanguage] = useState(locale);
@@ -273,7 +274,9 @@ export function CourseEditor({ locale, draft }: { locale: Locale; draft: CourseD
         <option value="ar" lang="ar">العربية</option><option value="en" lang="en">English</option>
       </select></label>
       <DocumentFields document={document} setDocument={setDocument} language={language} text={text} />
-      <QuizFields document={document} setDocument={setDocument} language={language} text={text} />
+      <QuizFields document={document} setDocument={setDocument} language={language} text={text} locale={locale} bank={bank} />
+      <GuidedLabFields labs={document.guidedLabs ?? []} locale={locale} language={language}
+        onChange={(guidedLabs) => setDocument({ ...document, guidedLabs })} />
       <DraftPreview document={document} locale={language} heading={text.preview} />
       <div className="builder-controls">
         <button className="identity-button">{text.save}</button>

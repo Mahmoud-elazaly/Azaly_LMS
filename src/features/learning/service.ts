@@ -1,8 +1,9 @@
-import { learningCommand } from '../../db/learning';
+import { guidedCommand, learningCommand } from '../../db/learning';
 import type { Locale } from '../../i18n/locales';
 import { AuthorizationError } from '../identity/policy';
 import { requireSession } from '../identity/session';
 import { studentRoles, type LearnerInput } from './policy';
+import type { GuidedLab } from '../guided/policy';
 
 export class LearningError extends Error {
   constructor(readonly status: 400 | 409) {
@@ -23,18 +24,23 @@ export type PlayerData = {
   progress: { lessonId: string; completed: boolean; bookmarked: boolean }[];
   quizzes: Quiz[];
   grades: Grade[];
+  guidedLabs: GuidedLab[];
 };
 
-async function execute<T>(token: string, operation: string, id: string | null, locale: Locale, payload?: object) {
+export async function authorizeLearningResult<T>(command: Promise<T>) {
   try {
-    return await learningCommand<T>(token, operation, id, locale, payload);
+    return await command;
   } catch (error) {
     const code = error instanceof Error && 'code' in error ? error.code : undefined;
     if (code === '42501') throw new AuthorizationError(403);
     if (code === '22023' || code === '22P02') throw new LearningError(400);
-    if (code === '23505') throw new LearningError(409);
+    if (code === '23505' || code === '40001') throw new LearningError(409);
     throw error;
   }
+}
+
+function execute<T>(token: string, operation: string, id: string | null, locale: Locale, payload?: object) {
+  return authorizeLearningResult(learningCommand<T>(token, operation, id, locale, payload));
 }
 
 export async function myEnrollments(locale: Locale, headers?: Headers) {
@@ -44,7 +50,11 @@ export async function myEnrollments(locale: Locale, headers?: Headers) {
 
 export async function readPlayer(id: string, locale: Locale, headers?: Headers) {
   const { token } = await requireSession(studentRoles, headers);
-  return execute<PlayerData>(token, 'read', id, locale);
+  const [player, guidedLabs] = await Promise.all([
+    execute<Omit<PlayerData, 'guidedLabs'>>(token, 'read', id, locale),
+    authorizeLearningResult(guidedCommand<GuidedLab[]>(token, { operation: 'read', id, locale })),
+  ]);
+  return { ...player, guidedLabs };
 }
 
 export async function changeLearning(input: LearnerInput, headers: Headers) {

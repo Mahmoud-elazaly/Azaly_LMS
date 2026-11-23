@@ -72,5 +72,5 @@ jobs:
             -c "SELECT count(*) FROM courses WHERE slug = 'persistence-check'")
           test "$persisted" = 1
           curl --fail --silent --show-error http://127.0.0.1:3000/api/ready
-      - name: Verify account, authoring and learning flows
-        run: bash infra/verify-phase4.sh
+      - name: Verify full platform gate
+        run: bash infra/verify.sh

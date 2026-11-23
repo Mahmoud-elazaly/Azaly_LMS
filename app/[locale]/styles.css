@@ -90,3 +90,13 @@ pre { @apply overflow-x-auto rounded-lg p-4; text-align: left; background: var(-
 .builder-controls { @apply flex flex-wrap gap-2; }
 
 .builder-fields .learning-choice { display: flex; align-items: baseline; gap: .5rem; }
+
+.guided-card, .guided-card form { min-inline-size: 0; }
+.guided-field { display: grid; gap: .25rem; min-inline-size: 0; }
+.guided-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.guided-code { max-inline-size: 100%; overflow-x: auto; text-align: left; }
+.guided-input-code { font-family: var(--font-mono, monospace); text-align: left; }
+.guided-provenance { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem .75rem; }
+.guided-provenance :is(p, time) { flex-basis: 100%; }
+.guided-badge { background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; padding: .2rem .65rem; color: var(--text); }
+.guided-badge[data-reviewed] { border-color: var(--accent); color: var(--accent); }

@@ -1,4 +1,4 @@
-import { integer, jsonb, pgSchema, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { index, integer, jsonb, pgSchema, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { user } from './identity-schema';
 import { courses, courseVersions } from './schema';
 
@@ -25,3 +25,12 @@ export const publicationEvents = authoring.table('events', {
   action: text().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const bankQuestions = authoring.table('bank_questions', {
+  id: uuid().defaultRandom().primaryKey(),
+  ownerId: text('owner_id').notNull().references(() => user.id),
+  question: jsonb().notNull(),
+  editVersion: integer('edit_version').notNull().default(1),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index('bank_questions_owner_idx').on(table.ownerId)]);
