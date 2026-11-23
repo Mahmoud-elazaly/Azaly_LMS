@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { guidedTemplate, readyToPublishLab } from '../guided/policy';
+import { guidedTemplate, readyToPublishLab } from '../guided/policy.ts';
 import type { Role } from '../identity/policy';
 
 export const authorRoles = ['OWNER', 'ADMIN', 'INSTRUCTOR'] as const;

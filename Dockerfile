@@ -6,7 +6,7 @@ RUN corepack enable && corepack install
 
 FROM package-manager AS dependencies
 COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=azaly-lms-pnpm,target=/root/.local/share/pnpm/store,sharing=locked pnpm install --frozen-lockfile
 
 FROM dependencies AS build
 COPY . .
@@ -15,9 +15,13 @@ RUN pnpm build
 
 FROM dependencies AS migrate
 COPY drizzle.config.ts ./
-COPY scripts/identity-admin.mjs ./scripts/identity-admin.mjs
+COPY scripts/identity-admin.mjs scripts/seed-prometheus-grafana.mjs ./scripts/
 COPY src/db ./src/db
 COPY src/features/identity/policy.ts ./src/features/identity/policy.ts
+COPY src/features/assessment/policy.ts ./src/features/assessment/policy.ts
+COPY src/features/authoring/policy.ts ./src/features/authoring/policy.ts
+COPY src/features/guided/policy.ts ./src/features/guided/policy.ts
+COPY src/features/curriculum/prometheus-grafana ./src/features/curriculum/prometheus-grafana
 USER node
 CMD ["pnpm", "db:migrate"]
 

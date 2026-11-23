@@ -1,6 +1,6 @@
 {
   "name": "azaly-lms",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "packageManager": "pnpm@11.9.0",
   "engines": {
@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
+    "db:seed:prometheus-grafana": "node scripts/seed-prometheus-grafana.mjs",
     "db:migrate": "drizzle-kit migrate",
     "auth:bootstrap-owner": "node scripts/identity-admin.mjs bootstrap",
     "auth:provision-login": "node scripts/identity-admin.mjs provision"

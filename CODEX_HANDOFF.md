@@ -4,9 +4,8 @@ Last reviewed **2026-11-23**. Repository `/home/azaly/Azaly-LMS`. The handoff re
 
 ## Where to resume
 
-- **Phases 0–4 are complete.** The published `v0.3.0` baseline is commit `4ab5e4e` on `origin/main`.
-- **Phase 5 is implemented and verified on WSL.** It adds a reusable question bank and Guided Labs with separate self-reported and instructor-reviewed records. The changes are in the working tree. See PLANS.md for the successful isolated gate and file inventory.
-- **The `v0.4.0` release is prepared on `feat/phase5-release`.** The unified WSL gate passed, and `academy-dev` runs `0.4.0` with migration `0007` applied. The release is uncommitted. See [release verification](PLANS.md#azaly-lms-v040-release-preparation).
+- **Phases 0–5 are complete.** The published `v0.4.0` baseline is commit `74ee72b` on `main`.
+- **Phase 6 adds the curated Prometheus and Grafana path for v0.5.0.** See the [operator procedure](README.md#publish-the-prometheus-and-grafana-course) and [acceptance evidence](PLANS.md#phase-6--curated-prometheus-and-grafana-learning-path).
 
 ## Project and architecture
 
@@ -109,11 +108,11 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
 ## Known limitations and open items
 
-- GitHub CI runs `bash infra/verify.sh` for the full platform gate, including Phase 5 assessment and Guided Lab coverage.
+- GitHub CI runs `bash infra/verify.sh` for the full platform gate, including the Phase 6 bilingual course journey and practice configuration checks.
 - `/api/health` signals process liveness. `/api/ready` currently checks the catalog pool and catalog schema only. A healthy response alone does not validate auth, authoring, or learner credentials.
 - Better Auth sign-in limits are per process. Invitation activation and management limits use PostgreSQL. Terminate TLS through a trusted proxy that overwrites `X-Academy-Client-IP` with the verified client IP and keeps the web port private. Requests without a usable address share the loopback bucket. See [invitation setup](README.md#provision-accounts-by-invitation) for mail configuration.
 - Switching language preserves the selected draft or enrollment and translates validated sign-in return paths.
-- Assessment authors must maintain equivalent answer ordering across languages. Enrollment upgrades are deliberate. Private media delivery, Phase 6 content curation, the Real Lab controller, and production restore and monitoring remain roadmap items.
+- Assessment authors must maintain equivalent answer ordering across languages. Enrollment upgrades are deliberate. Private media delivery, the Real Lab controller, and production restore and monitoring remain roadmap items.
 
 ## Exact next steps
 
@@ -138,7 +137,7 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
    Review the actual diff and new files. Stage and commit only with authorization. If the managed Codex sandbox reports a read-only `.git` directory or denied Docker socket, use the WSL host session. Keep existing volumes and project names. Avoid volume-removal flags.
 3. **For a separately authorized deployment**, follow [README.md](README.md#phase-4-learner-experience-on-wsl) to migrate and provision the learner login against the intended existing project. Update the environment and recreate its web container. Verify both HTTP probes and exercise a real authenticated learner flow. Do not reuse test passwords or restore test fixtures into an existing deployment.
-4. **Review the Phase 5 gate evidence in PLANS.md.** Review the author scope, submission and review constraints, and published snapshot behavior before a release. Phase 6 content curation needs its own scope approval. The NGINX execution pilot remains in Phase 7.
+4. **Review the Phase 6 gate evidence in PLANS.md.** Review the curated content, publication boundary, and instructor review behavior before merging. The NGINX execution pilot remains in Phase 7.
 
 ## Keeping this handoff current
 

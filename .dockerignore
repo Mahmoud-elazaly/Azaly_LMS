@@ -18,3 +18,4 @@
 !tests/**
 !scripts/
 !scripts/identity-admin.mjs
+!scripts/seed-prometheus-grafana.mjs
