@@ -2,11 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { useRef, useState, type FormEvent } from 'react';
+import { assessmentCopy } from '@/features/assessment/copy';
+import type { LearnerAnswer, LearnerQuestion } from '@/features/assessment/policy';
 import { learningCopy } from '@/features/learning/copy';
 import { progressPercent, type LearnerInput } from '@/features/learning/policy';
 import type { Grade, PlayerBlock, PlayerData, Quiz } from '@/features/learning/service';
 import type { Locale } from '@/i18n/locales';
 import { GuidedLabs } from './guided-labs';
+import { LessonMarkdown } from './lesson-markdown';
+import { SnippetLines } from './snippet-lines';
 
 async function send(input: LearnerInput): Promise<Response> {
   const response = await fetch('/api/learning', {
@@ -41,13 +45,35 @@ export function EnrollButton({ slug, locale }: { slug: string; locale: Locale })
   </div>;
 }
 
-function ContentBlock({ block, codeLabel }: { block: PlayerBlock; codeLabel: string }) {
+function ContentBlock({ block, codeLabel, locale }: { block: PlayerBlock; codeLabel: string; locale: Locale }) {
   if (block.type === 'code') {
     return <pre dir="ltr" translate="no" tabIndex={0} role="group" aria-label={codeLabel}><code>{block.text}</code></pre>;
   }
   if (block.type === 'heading') return <h3>{block.text}</h3>;
   if (block.type === 'callout') return <aside className="notice">{block.text}</aside>;
+  if (block.type === 'markdown') return <LessonMarkdown source={block.text} locale={locale} codeLabel={codeLabel} />;
   return <p>{block.text}</p>;
+}
+
+function readAnswer(form: FormData, question: LearnerQuestion): LearnerAnswer {
+  if (question.type === 'find_bug') return form.getAll(question.id).map(Number);
+  if (question.type === 'cli_recall') return String(form.get(question.id) ?? '');
+  return Number(form.get(question.id) ?? -1);
+}
+
+function QuestionFields({ question, locale }: { question: LearnerQuestion; locale: Locale }) {
+  const labels = assessmentCopy(locale);
+  if (question.type === 'find_bug') return <>
+    <p>{labels.selectLines}</p>
+    <SnippetLines source={question.snippet} label={labels.snippet} selection={{ name: question.id, lineLabel: labels.line }} />
+  </>;
+  if (question.type === 'cli_recall') return <label>{labels.command}
+    <input name={question.id} className="cli-field" dir="ltr" translate="no" type="text" required maxLength={512}
+      autoComplete="off" autoCapitalize="none" spellCheck={false} />
+  </label>;
+  return question.choices.map((choice, index) => <label className="learning-choice" key={index}>
+    <input type="radio" name={question.id} value={index} required /> <span>{choice}</span>
+  </label>);
 }
 
 function QuizForm({ quiz, enrollment, locale, onGrade }: {
@@ -62,7 +88,11 @@ function QuizForm({ quiz, enrollment, locale, onGrade }: {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const answers = Object.fromEntries(quiz.questions.map((question) => [question.id, Number(form.get(question.id) ?? -1)]));
+    const answers = Object.fromEntries(quiz.questions.map((question) => [question.id, readAnswer(form, question)]));
+    if (Object.values(answers).some((answer) => Array.isArray(answer) && answer.length === 0)) {
+      setFailed(true);
+      return;
+    }
     const serialized = JSON.stringify(answers);
     const attempt = retry.current?.answers === serialized ? retry.current : { answers: serialized, id: crypto.randomUUID() };
     retry.current = attempt;
@@ -85,9 +115,7 @@ function QuizForm({ quiz, enrollment, locale, onGrade }: {
     <h3>{quiz.title}</h3>
     {quiz.questions.map((question) => <fieldset key={question.id} disabled={pending}>
       <legend>{question.prompt}</legend>
-      {question.choices.map((choice, index) => <label className="learning-choice" key={index}>
-        <input type="radio" name={question.id} value={index} required /> <span>{choice}</span>
-      </label>)}
+      <QuestionFields question={question} locale={locale} />
     </fieldset>)}
     <button className="identity-button" disabled={pending}>{pending ? text.pending : text.submit}</button>
     {failed && <p role="alert">{text.error}</p>}
@@ -152,7 +180,7 @@ export function CoursePlayer({ locale, data }: { locale: Locale; data: PlayerDat
         </nav>
         {lesson && <article id="current-lesson" tabIndex={-1} className="notice builder-fields">
           <h2>{lesson.title}</h2>
-          {lesson.blocks.map((block) => <ContentBlock key={block.id} block={block} codeLabel={text.codeExample} />)}
+          {lesson.blocks.map((block) => <ContentBlock key={block.id} block={block} locale={locale} codeLabel={text.codeExample} />)}
           <div className="builder-controls">
             <button type="button" className="identity-button" disabled={pending || current?.completed}
               onClick={() => void update('complete', lesson.id)}>{current?.completed ? text.done : text.complete}</button>

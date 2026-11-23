@@ -36,4 +36,11 @@ Phase 6 adds an operator-only seed job using the existing migration service. It 
 | Crash or abandoned resources | The bridge retries failed destruction and reconciles namespaces with durable attempts. The sandbox exits at its deadline with Docker auto-removal. The controller also sweeps expired instances from its label inventory. |
 | Privileged Docker access | The controller is the only service with a Docker socket. Use a dedicated worker host for deployed labs. The bridge authenticates to a private HTTPS worker endpoint and holds a separate scoped PostgreSQL login. |
 
-The local lab profile exercises the worker on the existing Docker host with a dedicated control network. It is intended for development and acceptance. The deployment requires a separate worker and private authenticated HTTPS connectivity. Use the Phase 8 restore and security gates before enrollment outside the controlled pilot.
+The local lab profile exercises the worker on the existing Docker host with a dedicated control network. It is intended for development and acceptance. The deployment requires a separate worker and private authenticated HTTPS connectivity. Complete restore and security acceptance before enrollment outside the controlled pilot.
+
+| Phase 8 threat | Enforcement |
+| --- | --- |
+| Active lesson content | Markdown skips raw HTML and image elements. Mermaid disables author-supplied configuration directives and uses `securityLevel: 'strict'`. The generated SVG is displayed as an image. Unrenderable diagrams retain their readable source. |
+| Forged score or rubric disclosure | The existing learner definer validates the active Student and enrollment, reads the private snapshot and grades bounded typed answers. The explicit learner projection includes prompts, choices and practice snippets. CLI answers are compared as text. |
+| Archive traversal or decompression abuse | ZIP paths are checked and entries are read in memory. Entry count, archive size, per-file size and total expanded text are bounded. Non-regular files and binary artifacts are ignored. |
+| Import privilege or draft overwrite | The import function checks the live staff session and ownership under the existing non-login authoring definer role. The runtime gets execute access. Published snapshots go through publication, and the import digest protects staff-edited drafts. |

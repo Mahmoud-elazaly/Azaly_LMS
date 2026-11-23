@@ -4,6 +4,7 @@ import { AuthorizationError } from '../identity/policy';
 import { requireSession } from '../identity/session';
 import { studentRoles, type LearnerInput } from './policy';
 import type { GuidedLab } from '../guided/policy';
+import type { LearnerQuestion } from '../assessment/policy';
 
 export class LearningError extends Error {
   constructor(readonly status: 400 | 409) {
@@ -13,8 +14,8 @@ export class LearningError extends Error {
 
 export type Enrollment = { id: string; title: string; localeAvailable: boolean; completed: number };
 export type Grade = { id: string; quizId?: string; score: number; total: number; gradedAt: string };
-export type Quiz = { id: string; title: string; questions: { id: string; prompt: string; choices: string[] }[] };
-export type PlayerBlock = { id: string; type: 'heading' | 'paragraph' | 'code' | 'callout'; text: string };
+export type Quiz = { id: string; title: string; questions: LearnerQuestion[] };
+export type PlayerBlock = { id: string; type: 'heading' | 'paragraph' | 'code' | 'callout' | 'markdown'; text: string };
 export type PlayerLesson = { id: string; title: string; blocks: PlayerBlock[] };
 export type PlayerModule = { id: string; title: string; lessons: PlayerLesson[] };
 export type PlayerData = {

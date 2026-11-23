@@ -18,6 +18,7 @@
 !tests/**
 !scripts/
 !scripts/identity-admin.mjs
+!scripts/import-course.ts
 !scripts/seed-prometheus-grafana.mjs
 !infra/
 !infra/real-lab/

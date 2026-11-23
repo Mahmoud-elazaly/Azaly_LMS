@@ -30,19 +30,27 @@ SELECT md5(jsonb_build_array(
 SQL
 }
 
+phase7_migration_slice() {
+  python3 - "$phase7_legacy_dir" "$1" <<'PY'
+import json, pathlib, sys
+import shutil
+source = pathlib.Path('src/db/migrations')
+target = pathlib.Path(sys.argv[1])
+baseline = json.loads((source / 'meta/_journal.json').read_text())
+baseline['entries'] = baseline['entries'][:int(sys.argv[2])]
+for entry in baseline['entries']:
+    shutil.copyfile(source / (entry['tag'] + '.sql'), target / (entry['tag'] + '.sql'))
+(target / 'meta/_journal.json').write_text(json.dumps(baseline))
+PY
+  dc run --rm -T -v "$phase7_legacy_dir:/app/src/db/migrations:ro" migrate
+}
+
 phase7_upgrade() {
   phase7_legacy_dir="$(mktemp -d)"
   chmod 755 "$phase7_legacy_dir"
   mkdir "$phase7_legacy_dir/meta"
-  cp src/db/migrations/000[0-7]_*.sql "$phase7_legacy_dir/"
-  python3 - "$phase7_legacy_dir/meta/_journal.json" <<'PY'
-import json, pathlib, sys
-baseline = json.loads(pathlib.Path('src/db/migrations/meta/_journal.json').read_text())
-baseline['entries'] = [entry for entry in baseline['entries'] if entry['idx'] < 8]
-pathlib.Path(sys.argv[1]).write_text(json.dumps(baseline))
-PY
   dc build migrate
-  dc run --rm -T -v "$phase7_legacy_dir:/app/src/db/migrations:ro" migrate
+  phase7_migration_slice 8
   test "$(phase7_sql -c 'SELECT count(*) FROM drizzle.__drizzle_migrations')" = 8
   phase7_sql <<'SQL'
 INSERT INTO identity."user" (id,name,email) VALUES ('phase7-upgrade','Upgrade learner','upgrade@sql.example.test');
@@ -59,7 +67,7 @@ INSERT INTO course_versions(id,course_id,revision,published_at)
 SQL
   local before
   before="$(phase7_legacy_digest)"
-  dc run --rm migrate
+  phase7_migration_slice 9
   test "$(phase7_sql -c 'SELECT count(*) FROM drizzle.__drizzle_migrations')" = 9
   test "$before" = "$(phase7_legacy_digest)"
   phase7_sql <<'SQL'

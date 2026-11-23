@@ -17,6 +17,10 @@ const lessons = courseDocument.modules.flatMap((module) => module.lessons);
 const quizzes = courseDocument.quizzes ?? [];
 const labs = courseDocument.guidedLabs ?? [];
 const draftUrl = `/api/authoring?id=${courseId}`;
+function choiceTranslation(question: typeof quizzes[number]['questions'][number], locale: Locale) {
+  if (!('correct' in question)) throw new Error('The curated Phase 6 assessment uses multiple choice.');
+  return question.translations[locale];
+}
 const seed = (stage: 'publish' | 'draft', email: string) =>
   promisify(execFile)(process.execPath, ['scripts/seed-prometheus-grafana.mjs', stage, '--author', email]);
 
@@ -108,7 +112,7 @@ async function verifyPrivateProjection(page: Page, locale: Locale, enrollmentId:
   expect(player.quizzes.map(({ questions }) => questions.length)).toEqual([3, 3, 3, 3]);
   for (const [index, quiz] of player.quizzes.entries()) {
     expect(quiz.questions).toEqual(quizzes[index].questions.map((question) => ({
-      id: question.id, prompt: question.translations[locale]?.prompt, choices: question.translations[locale]?.choices,
+      id: question.id, prompt: choiceTranslation(question, locale)?.prompt, choices: choiceTranslation(question, locale)?.choices,
     })));
   }
   const html = await page.content();
@@ -124,7 +128,7 @@ async function gradeQuiz(page: Page, locale: Locale, quizIndex: number, answers:
   const quiz = quizzes[quizIndex];
   const form = page.locator('form').filter({ has: page.getByRole('heading', { name: quiz.titles[locale], exact: true }) });
   for (const [index, question] of quiz.questions.entries()) {
-    const translation = question.translations[locale];
+    const translation = choiceTranslation(question, locale);
     const field = form.getByRole('group', { name: translation?.prompt });
     await field.getByRole('radio', { name: translation?.choices[answers[index]], exact: true }).check();
   }

@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import { assessmentCopy } from '@/features/assessment/copy';
 import { importBankQuestion, type BankQuestion } from '@/features/assessment/policy';
+import { LessonMarkdown } from './lesson-markdown';
+import { SnippetLines } from './snippet-lines';
 import { GuidedLabFields } from './guided-lab-authoring';
 import { OrderedControls, replace } from './ordered-fields';
 import { builderCopy } from '@/features/authoring/copy';
@@ -14,6 +16,7 @@ type Labels = ReturnType<typeof builderCopy>;
 type Module = CourseDocument['modules'][number];
 type Lesson = Module['lessons'][number];
 type Block = Lesson['blocks'][number];
+const blockTypes = ['paragraph', 'heading', 'code', 'callout', 'markdown'] as const;
 
 async function send(input: Mutation) {
   const response = await fetch('/api/authoring', {
@@ -69,12 +72,10 @@ function LessonEditor({ lesson, language, text, onChange }: {
       onChange={(event) => onChange({ ...lesson, titles: { ...lesson.titles, [language]: event.target.value } })} /></label>
     {lesson.blocks.map((block, index) => <div key={block.id} className="builder-fields">
       <label>{text.blockType}<select value={block.type} onChange={(event) => {
-        const type = event.target.value;
-        if (type === 'paragraph' || type === 'heading' || type === 'code' || type === 'callout') {
-          setBlocks(replace(lesson.blocks, index, { ...block, type }));
-        }
+        const type = blockTypes.find((kind) => kind === event.target.value);
+        if (type) setBlocks(replace(lesson.blocks, index, { ...block, type }));
       }}>
-        {(['paragraph', 'heading', 'code', 'callout'] as const).map((type) => <option key={type} value={type}>{text[type]}</option>)}
+        {blockTypes.map((type) => <option key={type} value={type}>{text[type]}</option>)}
       </select></label>
       <label>{text.blockText}<textarea rows={3} dir={block.type === 'code' ? 'ltr' : direction(language)}
         value={block.translations[language] ?? ''} onChange={(event) => setBlocks(replace(lesson.blocks, index, {
@@ -145,9 +146,20 @@ function QuizEditor({ quiz, language, text, locale, bank, onChange }: {
     <label>{text.quizTitle}<input dir={direction(language)} value={quiz.titles[language] ?? ''}
       onChange={(event) => onChange({ ...quiz, titles: { ...quiz.titles, [language]: event.target.value } })} /></label>
     {quiz.questions.map((question, index) => {
-      const current = question.translations[language] ?? { prompt: '', choices: ['', ''], explanation: '' };
+      if (question.type === 'find_bug' || question.type === 'cli_recall') {
+        const current = question.translations[language];
+        return <div key={question.id} className="builder-fields">
+          <p><strong>{bankText[question.type]}</strong></p>
+          <p dir={direction(language)}>{current?.prompt}</p>
+          {question.type === 'find_bug' && <SnippetLines source={question.snippet} label={bankText.snippet} />}
+          {question.bankSource && <p>{bankText.imported}</p>}
+          <OrderedControls items={quiz.questions} index={index} onChange={setQuestions} text={text} />
+        </div>;
+      }
+      const choiceQuestion = question;
+      const current = choiceQuestion.translations[language] ?? { prompt: '', choices: ['', ''], explanation: '' };
       function setTranslation(translation: typeof current) {
-        setQuestions(replace(quiz.questions, index, { ...question, translations: { ...question.translations, [language]: translation } }));
+        setQuestions(replace(quiz.questions, index, { ...choiceQuestion, translations: { ...choiceQuestion.translations, [language]: translation } }));
       }
       return <div key={question.id} className="builder-fields">
         <label>{text.questionPrompt}<input dir={direction(language)} value={current.prompt} readOnly={Boolean(question.bankSource)}
@@ -219,6 +231,8 @@ function DraftPreview({ document, locale, heading }: { document: CourseDocument;
             if (block.type === 'code') return <pre key={block.id} dir="ltr"><code>{value}</code></pre>;
             if (block.type === 'heading') return <h5 key={block.id}>{value}</h5>;
             if (block.type === 'callout') return <aside className="notice" key={block.id}>{value}</aside>;
+            if (block.type === 'markdown') return <LessonMarkdown key={block.id} locale={locale}
+              source={value ?? ''} codeLabel={builderCopy(locale).code} />;
             return <p key={block.id}>{value}</p>;
           })}
         </section>)}

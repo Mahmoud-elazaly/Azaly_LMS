@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { bankContent, importBankQuestion } from '../../assessment/policy.ts';
+import { mcqBankContent, importBankQuestion } from '../../assessment/policy.ts';
 import { canPublish, documentSchema } from '../../authoring/policy.ts';
 import {
   alertmanagerConfig, composeFile, datasourceConfig, prometheusConfig, prometheusRules, sampleMetrics,
@@ -169,7 +169,7 @@ function question(key: string, tag: string, content: {
   const { prompt, choices, correct, explanation } = content;
   return {
     id: id(`bank/${key}`), version: 1, archived: false,
-    ...bankContent.parse({
+    ...mcqBankContent.parse({
       tags: ['prometheus-grafana', tag], correct,
       translations: {
         en: { prompt: prompt.en, choices: choices.map((choice) => choice.en), explanation: explanation.en },

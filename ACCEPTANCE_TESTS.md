@@ -42,3 +42,15 @@ Run `bash infra/verify.sh` for the complete gate. Phase 7 adds these checks.
 - Check the lab in Arabic and English at 320px and 1280px in Light and Dark. Confirm mirrored editor and preview columns, accessible controls, focus, feedback, and LTR input and output.
 
 The observed gate results and the `academy-dev` upgrade are recorded in [PLANS.md](PLANS.md#phase-7--isolated-nginx-real-lab-pilot).
+
+## Phase 8 lesson diagrams, assessments and import
+
+Run `bash infra/verify.sh` for the cumulative gate. The Phase 8 gate first applies the v0.6.0 migration history, then applies and replays `0009` and compares existing identity, course, grade, Guided Lab and Real Lab fixtures.
+
+- Render a Mermaid fence and an invalid fence in Arabic and English. Exercise zoom, keyboard panning, and reset. Check the builder preview, learner player, and bank in Light and Dark at 320px and 1280px. Verify LTR diagrams, snippets, and CLI inputs.
+- Create both new question types in the bank, import copies into a draft, and verify mixed assessment grading against pinned snapshots. Direct learner requests must reject caller-supplied grades and cross-account use. Assert that learner HTML and JSON exclude faulty lines, CLI grading rules, explanations and source bank IDs.
+- Test exact faulty-line sets, whitespace outside quotes, independent flag order, and whole-command regex matching. Keep all earlier multiple-choice and lab checks active.
+- Run the importer without database configuration in dry-run mode. Compare deterministic output across ZIP entry orders and confirm ignored files and unmatched quiz entries have structured warnings. Apply, replay, publish through the builder, and reimport a changed source. Confirm the existing snapshot survives and a subsequent manual draft edit causes a conflict.
+- Verify the scoped import function and private grading helpers through a rollback-only SQL test. The test covers author ownership, learner denial, grade scope and the absence of public grants. Closed registration continues to return HTTP 404.
+
+Observed results are recorded in [PLANS.md](PLANS.md#phase-8--lesson-diagrams-assessments-and-course-import).
