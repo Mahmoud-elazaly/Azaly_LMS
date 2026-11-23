@@ -2,11 +2,17 @@ FROM node:24-bookworm-slim AS package-manager
 ENV COREPACK_HOME=/opt/corepack
 WORKDIR /app
 COPY package.json ./
-RUN corepack enable && corepack install
+RUN --mount=type=cache,id=azaly-lms-corepack,target=/var/cache/corepack,sharing=locked \
+    corepack enable \
+    && COREPACK_HOME=/var/cache/corepack corepack install \
+    && mkdir -p /opt/corepack \
+    && cp -a /var/cache/corepack/. /opt/corepack/ \
+    && chmod -R a+rX /opt/corepack
 
 FROM package-manager AS dependencies
 COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN --mount=type=cache,id=azaly-lms-pnpm,target=/root/.local/share/pnpm/store,sharing=locked pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=azaly-lms-pnpm,target=/root/.local/share/pnpm/store,sharing=locked \
+    pnpm install --frozen-lockfile --prefer-offline
 
 FROM dependencies AS build
 COPY . .
@@ -34,8 +40,16 @@ CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
 
 FROM dependencies AS browser
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
-RUN pnpm exec playwright install --with-deps chromium \
-    && rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,id=azaly-lms-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=azaly-lms-apt-lists,target=/var/lib/apt/lists,sharing=locked \
+    --mount=type=cache,id=azaly-lms-playwright,target=/var/cache/ms-playwright,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && mkdir -p /var/cache/apt/archives/partial /var/lib/apt/lists/partial \
+    && PLAYWRIGHT_BROWSERS_PATH=/var/cache/ms-playwright pnpm exec playwright install --with-deps chromium \
+    && mkdir -p /opt/playwright \
+    && cp -a /var/cache/ms-playwright/. /opt/playwright/ \
+    && chmod -R a+rX /opt/playwright
 COPY --chown=node:node . .
 RUN chown node:node /app
 ENV NEXT_TELEMETRY_DISABLED=1
