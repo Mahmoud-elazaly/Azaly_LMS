@@ -122,7 +122,7 @@ Run the web service behind a trusted TLS reverse proxy on the same host. Preserv
 
 ## Scope
 
-The app supports anonymous catalog browsing, student registration and sign-in, role-based course authoring, version-pinned enrollment, lesson progress, bookmarks and graded course quizzes. Guided Labs and isolated lab execution are scheduled separately in ROADMAP.md.
+The app supports anonymous catalog browsing, administrator-managed invitations and sign-in, role-based course authoring, version-pinned enrollment, lesson progress, bookmarks and graded course quizzes. Guided Labs and isolated lab execution are scheduled separately in ROADMAP.md.
 
 ## Phase 2 on WSL
 
@@ -144,7 +144,7 @@ Better Auth 1.7.27 requires Drizzle ORM 0.45.2 or later on the stable 0.45 line.
 
 ### Configure authentication and initialize the Owner
 
-Set `BETTER_AUTH_URL` to the public HTTPS origin (or `http://127.0.0.1:3000` for local testing). Set `BETTER_AUTH_SECRET` to a persistent random value generated with `openssl rand -hex 32`. Keep these values in the ignored `.env`. For HTTPS, configure the trusted reverse proxy to replace `X-Academy-Client-IP` with the actual client IP and prevent direct public access to the app port. Requests without that header share a loopback rate-limit bucket. This slice uses in-memory limits for a single web process. Email verification and password recovery are unavailable until mail delivery is configured.
+Set `BETTER_AUTH_URL` to the public HTTPS origin (or the exact loopback origin used in the browser for local testing). Set `BETTER_AUTH_SECRET` to a persistent random value generated with `openssl rand -hex 32`. Keep these values in the ignored `.env`. For HTTPS, configure the trusted reverse proxy to replace `X-Academy-Client-IP` with the actual client IP and prevent direct public access to the app port. Requests without that header share a loopback rate-limit bucket. Better Auth applies sign-in limits per web process. Invitation activation and management limits are stored in PostgreSQL.
 
 After applying migrations, provision the least-privilege login and bootstrap the Owner through the migration image. The example uses `academy-dev`. Select the intended project before running the commands.
 
@@ -160,7 +160,15 @@ dc run --rm -T migrate pnpm auth:bootstrap-owner < /path/to/private-owner.json
 
 Use a newly generated `openssl rand -hex 32` value for the database login. Set `AUTH_DATABASE_URL` in `.env` to `postgresql://academy_auth:YOUR_AUTH_DB_PASSWORD@postgres:5432/academy` using the same password. Provisioning preserves an existing login password. The private JSON file must be outside the repository, have mode `0600`, and contain `name`, `email`, and a unique 12–128 character `password`. Keep the password in your credential manager. The CLI reads it from stdin and hashes it with Better Auth. A subsequent run preserves the existing Owner. The database blocks demoting, banning, or deleting an active Owner in this slice. Restart the relevant web container after setting the authentication environment.
 
-Only the email registration, email sign-in, sign-out, and sanitized session endpoints are exposed under `/api/auth`. Registration uses the Student role and does not sign in automatically. Admin plugin endpoints stay closed until the application has guarded administrative mutations. The localized account pages use these endpoints and a locale-specific return-path allowlist. The administrative page and its API use the audited database operation to change other users’ roles, suspend accounts, or restore them. An Owner can manage Admins, Instructors, and Students. Admins can manage Instructors and Students. Role and status changes require the affected user to sign in again.
+### Provision accounts by invitation
+
+Starting in version 0.3.0, public registration is closed. The localized user directory is at `/en/admin/users` and `/ar/admin/users`. Owners can provision and manage Admins, Instructors, and Learners. Admins can manage Instructors and Learners. Role and status changes revoke the affected user's sessions. Existing accounts remain available after upgrading.
+
+Set `INVITATION_MAIL_API_KEY` and `INVITATION_MAIL_FROM` in `.env` and restart the web service. Use a verified sender and allow the service outbound access to `https://api.resend.com/emails`. A compatible HTTPS relay can be configured with `INVITATION_MAIL_URL`. It must accept a bearer-authenticated JSON request with `from`, `to`, `subject`, and `text`, and return a successful HTTP response with a nonempty `id` when it accepts a message.
+
+An invitation expires after 48 hours and can be used once. Resending replaces the previous link. Revoking closes the invitation immediately. If mail is unconfigured, invite and resend requests report the missing configuration. If the provider rejects a message, the invitation remains pending and the administrator can resend it. Accepted means the provider accepted the message for delivery. The sign-in help dialog directs users to their administrator.
+
+For production, back up PostgreSQL, apply `0006_closed_registration` through the existing migration service, configure the sender and HTTPS origin, then deploy the web image. Send a test invitation to a mailbox you control and confirm that the link opens the expected public origin before inviting users.
 
 ### Verify Phase 2 in isolation
 

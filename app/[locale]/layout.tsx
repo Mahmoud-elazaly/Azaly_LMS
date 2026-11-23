@@ -12,10 +12,11 @@ import { parseTheme, themes } from '../_components/theme';
 import { saveTheme } from '../_components/theme-action';
 import { identityCopy } from '@/features/identity/copy';
 import { currentPrincipal } from '@/features/identity/session';
-import { AuthForm } from '../_components/auth-form';
+import { SignOutForm } from '../_components/auth-form';
 import { learningCopy } from '@/features/learning/copy';
 import { builderCopy } from '@/features/authoring/copy';
 import './styles.css';
+import './account.css';
 
 export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Promise<Metadata> {
   const { locale } = await params;
@@ -34,8 +35,8 @@ export default async function Layout({ children, params }: { children: ReactNode
     ...(principal.role !== 'STUDENT' ? [{ path: '/builder', label: builderCopy(locale).builder }] : []),
     ...(principal.role === 'INSTRUCTOR' ? [{ path: '/instructor', label: account.instructor }] : []),
     ...(principal.role === 'STUDENT' ? [{ path: '/student', label: account.student }, { path: '/learning', label: learningCopy(locale).learning }] : []),
-    ...(principal.role === 'OWNER' || principal.role === 'ADMIN' ? [{ path: '/admin', label: account.admin }] : []),
-  ] : [{ path: '/login', label: account.login }, { path: '/register', label: account.register }];
+    ...(principal.role === 'OWNER' || principal.role === 'ADMIN' ? [{ path: '/admin/users', label: account.admin }] : []),
+  ] : [{ path: '/login', label: account.login }];
   const theme = parseTheme((await cookies()).get('academy-theme')?.value);
 
   return <html lang={locale} dir={direction(locale)} data-theme={theme}>
@@ -53,7 +54,10 @@ export default async function Layout({ children, params }: { children: ReactNode
             { path: '/about', label: t('about') },
             ...accountLinks,
           ]} />
-          {principal && <AuthForm locale={locale} mode="logout" destination={`/${locale}`} />}
+          <form action={saveTheme} aria-label={t('theme')} key={theme} className="theme-controls">
+            {themes.map((option) => <button key={option} name="theme" value={option} aria-pressed={option === theme}>{t(option)}</button>)}
+          </form>
+          {principal && <SignOutForm locale={locale} />}
         </div>
       </header>
       <main className="container" id="main" tabIndex={-1}>{children}</main>
@@ -63,9 +67,6 @@ export default async function Layout({ children, params }: { children: ReactNode
             <bdi lang="en" dir="ltr" translate="no">{t('brand')}</bdi>
             <small className="app-version">{t('version')} <bdi dir="ltr">{version}</bdi></small>
           </div>
-          <form action={saveTheme} aria-label={t('theme')} key={theme} className="theme-controls">
-            {themes.map((option) => <button key={option} name="theme" value={option} aria-pressed={option === theme}>{t(option)}</button>)}
-          </form>
         </div>
       </footer>
     </body>

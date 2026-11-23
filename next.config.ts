@@ -3,8 +3,15 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
+  allowedDevOrigins: ['127.0.0.1'],
+  logging: {
+    incomingRequests: { ignore: [/^\/(?:ar|en)\/(?:login|activate)\?/] },
+  },
   async redirects() {
-    return [{ source: '/', destination: '/ar', permanent: false }];
+    return [
+      { source: '/', destination: '/en', permanent: false, has: [{ type: 'cookie', key: 'academy-locale', value: 'en' }] },
+      { source: '/', destination: '/ar', permanent: false },
+    ];
   },
   async headers() {
     return [{

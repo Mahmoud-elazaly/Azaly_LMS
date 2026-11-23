@@ -1,4 +1,5 @@
-import { boolean, index, pgSchema, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { boolean, check, foreignKey, index, integer, pgSchema, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { roles } from '../features/identity/policy';
 
 export const identity = pgSchema('identity');
@@ -63,6 +64,7 @@ export const verification = identity.table('verification', {
 
 export const auditEvent = identity.table('audit_event', {
   id: uuid().defaultRandom().primaryKey(),
+  action: text().default('user.change').notNull(),
   actorId: text('actor_id').notNull(),
   targetId: text('target_id').notNull(),
   previousRole: userRole('previous_role').notNull(),
@@ -71,3 +73,28 @@ export const auditEvent = identity.table('audit_event', {
   newBanned: boolean('new_banned'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const invitation = identity.table('invitation', {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  email: text().notNull(),
+  role: userRole().notNull(),
+  locale: text().notNull(),
+  tokenHash: text('token_hash').unique('invitation_token_hash_key'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdBy: text('created_by').notNull(),
+  closedAt: timestamp('closed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  foreignKey({ name: 'invitation_created_by_fkey', columns: [table.createdBy], foreignColumns: [user.id] }),
+  uniqueIndex('invitation_open_email_idx').on(table.email).where(sql`${table.closedAt} IS NULL`),
+  check('invitation_role_check', sql`${table.role} <> 'OWNER'`),
+  check('invitation_locale_check', sql`${table.locale} IN ('ar', 'en')`),
+  check('invitation_check', sql`(${table.closedAt} IS NULL) = (${table.tokenHash} IS NOT NULL)`),
+]);
+
+export const accountRateLimit = identity.table('account_rate_limit', {
+  bucket: text().primaryKey(),
+  attempts: integer().notNull(),
+  resetsAt: timestamp('resets_at', { withTimezone: true }).notNull(),
+}, (table) => [index('account_rate_limit_resets_idx').on(table.resetsAt)]);

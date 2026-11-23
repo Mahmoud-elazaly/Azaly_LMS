@@ -1,14 +1,26 @@
 BEGIN;
-SET LOCAL ROLE academy_auth_runtime;
-
 INSERT INTO identity."user" (id, name, email)
 VALUES ('phase2-permissions-check', 'Permission check', 'phase2-permissions@example.test');
+SET LOCAL ROLE academy_auth_runtime;
 
 DO $check$
 BEGIN
   IF (SELECT role FROM identity."user" WHERE id = 'phase2-permissions-check') IS DISTINCT FROM 'STUDENT' THEN
     RAISE EXCEPTION 'New identity did not default to STUDENT';
   END IF;
+  BEGIN
+    INSERT INTO identity."user" (id, name, email)
+    VALUES ('public-signup-denied', 'Unauthorized account', 'signup@example.test');
+    RAISE EXCEPTION 'The authentication runtime can provision an account directly';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+  BEGIN
+    PERFORM token_hash FROM identity.invitation;
+    RAISE EXCEPTION 'The authentication runtime can read invitation token hashes';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
   BEGIN
     UPDATE identity."user" SET role = 'OWNER' WHERE id = 'phase2-permissions-check';
     RAISE EXCEPTION 'The authentication runtime can change roles';

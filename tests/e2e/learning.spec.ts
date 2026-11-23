@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { createTestLearner } from './test-accounts';
 
 const origin = 'http://127.0.0.1:3100';
 const slug = 'student-linux-essentials';
@@ -9,17 +10,10 @@ function post(request: APIRequestContext, url: string, data: object) {
   return request.post(url, { headers: { Origin: origin }, data });
 }
 
-async function register(request: APIRequestContext) {
-  const email = `learner-${randomUUID()}@example.test`;
-  const password = randomUUID();
-  expect((await post(request, '/api/auth/sign-up/email', { name: 'Student Test', email, password })).status()).toBe(200);
-  return { email, password };
-}
-
 async function signIn(page: Page, credentials: { email: string; password: string }) {
   await page.goto('/en/login');
   await page.getByLabel('Email address').fill(credentials.email);
-  await page.getByLabel('Password').fill(credentials.password);
+  await page.getByLabel('Password', { exact: true }).fill(credentials.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/en\/dashboard$/);
 }
@@ -39,8 +33,8 @@ test.describe('learner experience on an isolated database', () => {
     await page.goto('/ar/learning');
     await expect(page).toHaveURL(/\/ar\/login\?next=/);
 
-    const learner = await register(request);
-    const second = await register(request);
+    const learner = await createTestLearner();
+    const second = await createTestLearner();
     const owner = await browser.newPage();
     const otherStudent = await browser.newPage();
     const secondDevice = await browser.newPage();
@@ -127,7 +121,7 @@ test.describe('learner experience on an isolated database', () => {
 
       await secondDevice.goto(enrollmentPath);
       await secondDevice.getByLabel('Email address').fill(learner.email);
-      await secondDevice.getByLabel('Password').fill(learner.password);
+      await secondDevice.getByLabel('Password', { exact: true }).fill(learner.password);
       await secondDevice.getByRole('button', { name: 'Sign in' }).click();
       await expect(secondDevice).toHaveURL(enrollmentPath);
       await secondDevice.getByRole('navigation').getByRole('link', { name: 'My learning' }).click();

@@ -4,8 +4,7 @@ Last reviewed **2026-11-23**. Repository `/home/azaly/Azaly-LMS`. The handoff re
 
 ## Where to resume
 
-- **Phases 0–3 are complete.** `main` tracks `origin/main`. The latest visible commit is `ea0e81b` (`feat: implement and verify phase 3 browser-based course builder`).
-- **Phase 4 is complete.** The final application review and isolated verification results are recorded in PLANS.md. The reviewed changes are in the working tree.
+- **Phases 0–4 are complete.** Release `v0.2.0` includes the Phase 4 learning flow. `main` tracks `origin/main`. See PLANS.md for the isolation results and the version 0.3.0 account changes.
 - **Phase 5 has not started.** The user has been directing one phase at a time. Get explicit direction before starting the next phase. The course-level multiple-choice quizzes requested in Phase 4 are implemented. The larger assessment question bank, Guided Labs, and Real Labs remain future work.
 
 ## Project and architecture
@@ -14,7 +13,7 @@ Azaly LMS is a self-hosted bilingual LMS for infrastructure and DevOps training.
 
 The committed toolchain uses Node.js 24 in Docker, Corepack with pnpm 11.9.0, Next.js 16.4.5, React 19.2.8, TypeScript 5.9.3, Tailwind 4.3.3, next-intl 4.5.6, Better Auth 1.7.27, Drizzle ORM 0.45.2, drizzle-kit 0.31.7, and PostgreSQL 17. Read exact pins in [package.json](package.json) and [pnpm-lock.yaml](pnpm-lock.yaml). Runtime and test installations use the frozen lockfile. [pnpm-workspace.yaml](pnpm-workspace.yaml) explicitly allows selected dependency builds, including `@swc/core@1.16.22`. Keep pnpm's strict build policy.
 
-The root redirects to `/ar`. Locale-prefixed pages use Arabic RTL or English LTR, and code renders LTR in both. Interface text and course content are authored independently for both languages. Light, dark, and system theme preferences use a cookie. The public catalog only exposes the newest eligible revision and its requested locale. The original [bilingual Prometheus and Grafana HTML](prometheus-grafana-course-bilingual.html) stays at its original path as offline source material. It is outside the site's routes and Docker build input.
+The root uses the saved locale and defaults to `/ar`. Locale-prefixed pages use Arabic RTL or English LTR, and code renders LTR in both. Interface text and course content are authored independently for both languages. Light, dark, and system theme preferences use a cookie. The public catalog only exposes the newest eligible revision and its requested locale. The original [bilingual Prometheus and Grafana HTML](prometheus-grafana-course-bilingual.html) stays at its original path as offline source material. It is outside the site's routes and Docker build input.
 
 The preferred deployment is a trusted TLS reverse proxy in front of the loopback-bound web service. PostgreSQL is on the internal Compose data network with a named volume and no published host port. The web, dev, browser, and migration runtime processes use the non-root Node user. The web image runs Next.js standalone via `node server.js`. The dev service bind-mounts app, source, and tests read-only. Rebuild the appropriate image when manifests, root configuration, or migrations change.
 
@@ -26,7 +25,7 @@ Guided Labs are intended for learner-managed infrastructure with explicit comple
 | --- | --- |
 | 0 | Complete. Architecture, threat model, database boundaries, source preservation, delivery gates, and deployment assumptions documented. |
 | 1 | Closed. Docker-first foundation, bilingual public Home, About and catalog, published course detail pages, theming, PostgreSQL migrations, liveness/readiness, quality tooling, and CI. |
-| 2 | Closed. Email/password registration, sign-in/sign-out, sanitized session endpoint, account and role dashboards, Owner bootstrap, suspension/restoration and audited role changes. Public registration defaults to `STUDENT`. |
+| 2 | Closed. Email/password sign-in/sign-out, sanitized session endpoint, account and role dashboards, Owner bootstrap, suspension/restoration and audited role changes. Version 0.3.0 replaces registration with administrator invitations. |
 | 3 | Closed and pushed. Browser authoring in both languages, structured paragraph/heading/code/callout blocks, module/lesson/block ordering, protected preview, draft saves, publishing, republishing, withdrawal and archival. Verified two unrelated courses created and published entirely through the browser. |
 | 4 | Implemented and WSL suite passed. Bilingual enrollment from published course details, My learning, course player, completion, bookmarks and last-lesson resume across sessions/devices. Optional localized course quizzes in the builder, server-side grading, and private grade history. Verification is recorded in PLANS.md. Changes await commit. |
 | 5–8 | Future. Phase 5 expands assessments and adds Guided Labs. Phase 6 delivers a curated Prometheus/Grafana learning path. Phase 7 pilots an isolated NGINX Real Lab. Phase 8 covers restore drills, monitoring, capacity and security hardening before external enrollment. |
@@ -46,7 +45,7 @@ Guided Labs are intended for learner-managed infrastructure with explicit comple
 | [README.md](README.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DATA_MODEL.md](DATA_MODEL.md), [SECURITY_THREAT_MODEL.md](SECURITY_THREAT_MODEL.md) | WSL operation, component boundaries, persistent data, and security rationale. |
 | `app/[locale]/layout.tsx`, `app/[locale]/styles.css`, `src/i18n/{locales,messages}.ts`, `app/_components/navigation.tsx`, `app/_components/{theme,theme-action}.ts` | Bilingual layout, navigation and account links, direction, theme, and shared styling. Each feature has its own localized copy. |
 | `app/[locale]/courses/`, `src/db/public-catalog.ts`, `src/db/client.ts` | Public catalog and course details under the read-only pool. A signed-in Student can enroll from course details. |
-| `app/[locale]/[account]/page.tsx`, `app/_components/auth-form.tsx`, `src/features/identity/` | Localized sign-in, registration, profile and role pages, session/role policy, login return-path allowlist, account mutations and sanitized diagnostics. |
+| `app/[locale]/[account]/page.tsx`, `app/[locale]/activate/page.tsx`, `app/[locale]/admin/`, `app/_components/auth-form.tsx`, `src/features/identity/` | Localized sign-in, invitation activation, profile, role pages and user management. Includes session policy, account mutations and mail integration. |
 | `app/api/auth/[...all]/route.ts`, `app/api/admin/users/route.ts`, `app/api/instructor/route.ts` | Allowlisted auth endpoints, administrative user management, and Instructor-only identity endpoint. Better Auth's generic admin endpoints remain closed. |
 | `app/[locale]/builder/page.tsx`, `app/_components/course-builder.tsx`, `app/api/authoring/route.ts`, `src/features/authoring/` | Draft editor and safe preview, localized quiz editing, validation, publish policy and authoring service. |
 | `app/[locale]/learning/page.tsx`, `app/_components/learning.tsx`, `app/api/learning/route.ts`, `src/features/learning/` | Enrollment, localized player and grade history, lesson operations, ownership and quiz submission contracts. |
@@ -69,7 +68,8 @@ Applied migration sequence and intent:
 - `0000_catalog.sql` creates public courses, revisions and translations.
 - `0001_identity.sql` creates the identity tables and authentication boundary. `0002_identity_guards.sql` protects privileged registration fields and the active Owner. `0003_identity_management.sql` adds the audited identity mutation and suspension history.
 - `0004_authoring.sql` adds draft/snapshot/event tables, course order and withdrawal, existing-course draft backfill, and the restricted author command.
-- `0005_learning.sql` adds learner tables, session/ownership-scoped commands and database grading. Keep applied migrations immutable. Add new migrations, journal entries, and matching Drizzle snapshots for changes to persistent schema.
+- `0005_learning.sql` adds learner tables, session/ownership-scoped commands and database grading.
+- `0006_closed_registration.sql` closes direct runtime account creation and adds invitation, audit and account rate-limit storage. Keep applied migrations immutable. Add new migrations, journal entries, and matching Drizzle snapshots for changes to persistent schema.
 
 ### Runtime credentials and authorization
 
@@ -83,7 +83,7 @@ Applied migration sequence and intent:
 
 Protected endpoints check the active Better Auth session and canonical roles in application code. Scoped SQL functions recheck the session and applicable object ownership and use a fixed search path. POST mutations check the configured origin. Missing authentication returns `401`, while the wrong role or cross-account access returns `403`. Learner requests reject client-supplied ownership and grade data. Progress writes require a lesson in the enrolled snapshot.
 
-Better Auth uses a seven-day session with a one-day refresh age and cookie caching disabled. Cookies are HttpOnly and SameSite=Lax, with Secure set for HTTPS. Auth exposes email registration, email sign-in, sign-out, and token-free session summaries. Return paths are restricted to allowed paths in the same locale. Keep all actual secrets in ignored `.env` or the deployment secret store. Maintain distinct URL-safe database credentials. Never put session tokens, request bodies, SQL parameters, or real passwords into application logs or handoff notes.
+Better Auth uses a seven-day session with a one-day refresh age and cookie caching disabled. Cookies are HttpOnly and SameSite=Lax, with Secure set for HTTPS. Auth exposes email sign-in, sign-out, invitation activation and token-free session summaries. Return paths are restricted to allowed paths in the same locale. Keep all actual secrets in ignored `.env` or the deployment secret store. Maintain distinct URL-safe database credentials. Never put session tokens, request bodies, SQL parameters, or real passwords into application logs or handoff notes.
 
 ## WSL evidence and test operation
 
@@ -98,7 +98,7 @@ Better Auth uses a seven-day session with a one-day refresh age and cookie cachi
 
 The learner browser test covers protected redirects, refusal to enroll in a draft, Arabic enrollment and RTL/LTR rendering, bookmarking, progress persistence after reload, resume in a separate signed-in browser context, answer-key exclusion, rejection of a client-supplied score, grade history, and cross-student denial for reads, progress, and submissions.
 
-The Phase 4 runner creates a uniquely named Compose project and fresh PostgreSQL volume, generates temporary credentials, and publishes no host ports. It prints container logs on failure, removes its one-off web/browser containers, stops the test stack, and retains its isolated volume. It runs browser groups separately to keep registration and sign-in rate-limit buckets independent. Playwright uses Chromium on container-local `127.0.0.1:3100`. Auth tests require isolated Owner configuration, and `PHASE3_TEST=1` and `PHASE4_TEST=1` enable the respective suites. An ordinary Playwright invocation can show skips and does not prove the whole gate.
+The Phase 4 runner creates a uniquely named Compose project and fresh PostgreSQL volume, generates temporary credentials, and publishes no host ports. It prints container logs on failure, removes its one-off web/browser containers, stops the test stack, and retains its isolated volume. It runs browser groups separately to keep sign-in rate-limit buckets independent. Playwright uses Chromium on container-local `127.0.0.1:3100` and captures invitation mail on loopback. Auth tests require isolated Owner configuration, and `PHASE3_TEST=1` and `PHASE4_TEST=1` enable the respective suites. An ordinary Playwright invocation can show skips and does not prove the whole gate.
 
 The Docker browser stage now inherits `dependencies` and installs Chromium and OS dependencies before copying source. The Phase 4 log shows a successful cold Chromium install and passing E2E with that layer order. Docker reused the Chromium installation layer during the application review rerun. The production web image keeps its standalone server. Playwright now runs the standalone server with the built static assets, matching the production image entry point.
 
@@ -106,7 +106,7 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
 - GitHub CI invokes the isolated Phase 4 runner for privileged identity, authoring, and learner acceptance.
 - `/api/health` signals process liveness. `/api/ready` currently checks the catalog pool and catalog schema only. A healthy response alone does not validate auth, authoring, or learner credentials.
-- Auth rate limits are per process and in memory. Before direct external use, terminate TLS through a trusted proxy that overwrites `X-Academy-Client-IP` with the verified client IP and keeps the web port private. Requests without a usable address share the loopback bucket. Email verification and password recovery await mail delivery.
+- Better Auth sign-in limits are per process. Invitation activation and management limits use PostgreSQL. Terminate TLS through a trusted proxy that overwrites `X-Academy-Client-IP` with the verified client IP and keeps the web port private. Requests without a usable address share the loopback bucket. See [invitation setup](README.md#provision-accounts-by-invitation) for mail configuration.
 - Switching language preserves the selected draft or enrollment and translates validated sign-in return paths.
 - Course-level quizzes are in place. The reusable question bank, private media/file delivery, Guided Lab evidence flow, Real Lab controller, and production restore/monitoring work are still ahead. Assessment authors must maintain equivalent answer ordering across languages. Enrollment upgrades are not automatic.
 

@@ -5,6 +5,7 @@ import { createAccessControl } from 'better-auth/plugins/access';
 import { z } from 'zod';
 import { identityDatabase } from '../../db/identity';
 import { account, session, user, verification } from '../../db/identity-schema';
+import { passwordMaximum, passwordMinimum } from './directory';
 import { reportAuthFailure } from './diagnostics';
 
 const environment = z.object({
@@ -42,7 +43,10 @@ function createAuth() {
         schema: { account, session, user, verification },
         transaction: true,
       }),
-      emailAndPassword: { enabled: true, autoSignIn: false, minPasswordLength: 12, maxPasswordLength: 128 },
+      emailAndPassword: {
+        enabled: true, disableSignUp: true, autoSignIn: false,
+        minPasswordLength: passwordMinimum, maxPasswordLength: passwordMaximum,
+      },
       session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24, cookieCache: { enabled: false } },
       advanced: {
         useSecureCookies: origin.startsWith('https:'),
@@ -54,7 +58,6 @@ function createAuth() {
         storage: 'memory',
         customRules: {
           '/sign-in/email': { window: 60, max: 8 },
-          '/sign-up/email': { window: 600, max: 5 },
         },
       },
       logger: { disabled: true },

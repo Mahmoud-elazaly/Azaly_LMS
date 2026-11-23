@@ -10,6 +10,9 @@ services:
       LEARNER_DATABASE_URL: ${LEARNER_DATABASE_URL:-}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      INVITATION_MAIL_API_KEY: ${INVITATION_MAIL_API_KEY:-}
+      INVITATION_MAIL_FROM: ${INVITATION_MAIL_FROM:-}
+      INVITATION_MAIL_URL: ${INVITATION_MAIL_URL:-https://api.resend.com/emails}
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { createTestLearner } from './test-accounts';
 
 const origin = 'http://127.0.0.1:3100';
 const ownerPassword = process.env.AUTH_TEST_OWNER_PASSWORD;
@@ -8,17 +8,10 @@ function post(request: APIRequestContext, path: string, data: object) {
   return request.post(path, { headers: { Origin: origin }, data });
 }
 
-async function register(context: APIRequestContext) {
-  const email = `builder-${randomUUID()}@example.test`;
-  const password = randomUUID();
-  expect((await post(context, '/api/auth/sign-up/email', { name: 'Builder Test', email, password })).status()).toBe(200);
-  return { email, password };
-}
-
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/en/login');
   await page.getByLabel('Email address').fill(email);
-  await page.getByLabel('Password').fill(password);
+  await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/en\/dashboard$/);
 }
@@ -64,24 +57,19 @@ test.describe('course builder on the isolated database', () => {
     await page.goto('/ar/builder');
     await expect(page).toHaveURL(/\/ar\/login\?next=/);
 
-    const student = await register(request);
+    const student = await createTestLearner();
     await signIn(page, student.email, student.password);
     await page.goto('/en/builder');
     await expect(page.getByText('You do not have access to this course builder.')).toBeVisible();
     expect((await page.request.get('/api/authoring')).status()).toBe(403);
     expect((await post(page.request, '/api/authoring', { operation: 'create', slug: 'blocked' })).status()).toBe(403);
 
-    const other = await register(request);
+    const other = await createTestLearner();
     const owner = await browser.newPage();
     const secondInstructor = await browser.newPage();
     try {
       await signIn(owner, 'owner@example.test', ownerPassword);
-      const response = await owner.request.get('/api/admin/users');
-      expect(response.status()).toBe(200);
-      const accounts: { id: string; email: string }[] = (await response.json()).users;
-      for (const email of [student.email, other.email]) {
-        const id = accounts.find((entry) => entry.email === email)?.id;
-        expect(id).toBeTruthy();
+      for (const { id } of [student, other]) {
         expect((await post(owner.request, '/api/admin/users', { operation: 'role', id, role: 'INSTRUCTOR' })).status()).toBe(200);
       }
       await signIn(page, student.email, student.password);

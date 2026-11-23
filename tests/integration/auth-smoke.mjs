@@ -29,12 +29,9 @@ const cookiePath = '/tmp/academy-auth-verification-cookie';
 async function verifyCredentials() {
   const registration = { name: 'Test Student', email, password, role: 'OWNER' };
 
-  assert.equal((await request('/sign-up/email', { body: registration, origin: 'https://untrusted.example.test' })).status, 403);
-  for (let i = 0; i < 2; i++) {
-    const response = await request('/sign-up/email', { body: registration });
-    assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true });
-  }
+  assert.equal((await request('/sign-up/email', { body: registration })).status, 404);
+  assert.equal((await request('/sign-in/email', { body: { email, password }, origin: 'https://untrusted.example.test' })).status, 403);
+  assert.equal((await request('/sign-in/email', { body: { email, password } })).status, 401);
   assert.equal((await request('/sign-in/email', { body: { email, password: 'incorrect password' } })).status, 401);
 
   async function signIn(credentials, role) {
@@ -52,14 +49,9 @@ async function verifyCredentials() {
     return cookie;
   }
 
-  const studentCookie = await signIn({ email, password }, 'STUDENT');
-  assert.equal((await request('/admin/set-role', { body: { role: 'OWNER' }, cookie: studentCookie })).status, 404);
   const ownerCookie = await signIn({ email: 'owner@example.test', password: ownerPassword }, 'OWNER');
-
-  assert.equal((await request('/sign-out', { body: {}, cookie: studentCookie })).status, 200);
-  const response = await request('/get-session', { cookie: studentCookie });
-  assert.deepEqual(await response.json(), { user: null });
-  console.log('Registration, duplicate response, sign-in, roles, CSRF rejection and logout passed.');
+  assert.equal((await request('/admin/set-role', { body: { role: 'OWNER' }, cookie: ownerCookie })).status, 404);
+  console.log('Closed registration, sign-in, session cookies and origin enforcement passed.');
   writeFileSync(cookiePath, ownerCookie, { mode: 0o600, flag: 'wx' });
 }
 

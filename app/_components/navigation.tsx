@@ -3,6 +3,7 @@
 import { selectedCoursePath, returnPath } from '@/features/identity/return-path';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { AccountIcon } from './account-icon';
 import type { Locale } from '@/i18n/locales';
 
 export function Navigation({ locale, label, links, language }: {
@@ -19,11 +20,21 @@ export function Navigation({ locale, label, links, language }: {
   let alternate = `/${other}${suffix ? `/${suffix}` : ''}`;
   if (suffix === 'learning' || suffix === 'builder') {
     alternate = selectedCoursePath(other, suffix, query.get('id'));
-  } else if ((suffix === 'login' || suffix === 'register') && query.has('next')) {
-    const destination = returnPath(locale, query.get('next')).slice(`/${locale}`.length);
-    const params = new URLSearchParams({ next: `/${other}${destination}` });
-    if (suffix === 'login' && query.get('registered') === '1') params.set('registered', '1');
-    alternate += `?${params}`;
+  } else if (suffix === 'login') {
+    const params = new URLSearchParams();
+    if (query.has('next')) {
+      const destination = returnPath(locale, query.get('next')).slice(`/${locale}`.length);
+      params.set('next', `/${other}${destination}`);
+    }
+    if (query.get('activated') === '1') params.set('activated', '1');
+    if (params.size) alternate += `?${params}`;
+  } else if (suffix === 'admin/users') {
+    const filters = new URLSearchParams();
+    for (const name of ['q', 'role', 'status', 'sort', 'page']) {
+      const value = query.get(name);
+      if (value) filters.set(name, value);
+    }
+    if (filters.size) alternate += `?${filters}`;
   }
 
   return <>
@@ -33,6 +44,11 @@ export function Navigation({ locale, label, links, language }: {
         return <Link key={path} href={href} aria-current={pathname === href ? 'page' : undefined}>{label}</Link>;
       })}
     </nav>
-    <a className="language" href={alternate} hrefLang={other} lang={other}>{language}</a>
+    <a className="language" href={alternate} hrefLang={other} lang={other}
+      onClick={(event) => {
+        if (suffix !== 'activate' || !window.location.hash || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        window.location.replace(alternate + window.location.hash);
+      }}><AccountIcon name="globe" />{language}</a>
   </>;
 }

@@ -241,3 +241,46 @@ Renamed the app to Azaly LMS in the localized shell, browser title, and About pa
 | Development browser | Chromium passed eight combinations of Arabic and English, widths of 375 and 1280 px, and light and dark themes. Each About page check verified the title, decoded logo, localized version and its LTR direction, visible keyboard focus, document direction, LTR code, and absence of horizontal overflow. |
 | Isolated acceptance | `bash infra/verify-phase4.sh` exited 0 in `academy-learning-03e6b8bdb333`. Frozen install, lint, type checking, production build, 16 unit tests, migration replay, permission checks, and authentication smoke passed. Chromium passed 10 tests, including branding and release version in both locales. Log at `test-results/azaly-0.2.0-acceptance.ZSl6G0.log`. |
 | Source preservation | `git diff --check` passed for project changes. The staged check flagged upstream whitespace in the pinned UI/UX Pro Max `scripts/design_system.py`, which was preserved verbatim. `git hash-object` matched `HEAD` for the original blueprint and course HTML. |
+
+## Local sign-in repair
+
+A sign-in submission reached the development server as GET before the client handler was ready. The form now declares POST explicitly and enables submission after hydration. The development server accepts loopback assets at `127.0.0.1` and omits account page queries from incoming request logs. The running app's authentication database returned an account count of zero.
+
+| Check | Observed result |
+| --- | --- |
+| Local rebuild | `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml up -d --build --wait dev` rebuilt the local service. `/api/health`, `/api/ready`, `/api/auth/get-session`, `/ar/login`, and `/en/login` returned HTTP 200 after startup. Both home pages displayed `0.2.0`. |
+| Browser and logging | Chromium verified both sign-in and registration forms in Arabic and English at 375 and 1280 px in light and dark themes. The forms used POST, enabled submission after hydration, showed keyboard focus, and kept password inputs LTR. Both languages showed loading guidance and blocked submission with JavaScript disabled. A synthetic account query marker stayed out of the development log. |
+| Isolated acceptance | `bash infra/verify-phase4.sh` exited 0 in `academy-learning-a1c51bd0fdf2`. Lint, type checking, production builds, 16 unit tests, migration replay, permissions, authentication smoke, and all 11 Chromium tests passed. Log at `test-results/azaly-auth-form-acceptance.dE7ZEu.log`. |
+
+The first browser run exposed missing loading guidance in the JavaScript-disabled test. The corrected run passed after reclaiming Docker network slots from finished verification projects with `docker compose -p <test-project> -f compose.yaml -f infra/compose.dev.yaml --profile test down`. The verification data volumes were retained.
+
+## Azaly LMS v0.3.0 — Closed registration and sign-in redesign
+
+Reviewed the Hybrid Architecture MVP blueprint, the existing Better Auth and Drizzle setup, and `Azaly_LMS_SignIn_AdminOnly_Mockup.html`. The HTML stays at its original path as an offline reference. The release reuses the Azaly LMS icon, locale routes, secure sessions, theme cookie, and active Owner protection.
+
+The centered sign-in, localized activation, and protected user directory share Navy and Mint tokens. The directory displays database counts and supports search, sorting, filtering, pagination, invitations, and audited edits. `OWNER` can manage `ADMIN`, `INSTRUCTOR`, and `STUDENT` accounts. `ADMIN` can manage instructors and learners. Role and status changes revoke the target's sessions. Registration returns HTTP 404 and the database denies direct runtime account inserts. Activation consumes a 48-hour token digest in the same transaction as account creation.
+
+| Area | Added and updated files |
+| --- | --- |
+| Pages and shell | `app/[locale]/[account]/page.tsx`, `app/[locale]/activate/page.tsx`, `app/[locale]/admin/{page,users/page,reports/page}.tsx`, `app/[locale]/{layout.tsx,styles.css,account.css}`, `proxy.ts`, `next.config.ts` |
+| UI | `app/_components/{account-icon,account-ui,admin-shell,auth-form,navigation,user-dialogs,user-directory}.tsx` |
+| API and identity | `app/api/admin/users/route.ts`, `app/api/auth/{[...all],activate}/route.ts`, `src/features/identity/{auth,copy,directory,invitation-mail,management,request,return-path}.ts`. Removed unused `src/features/identity/actions.ts`. |
+| Database | `src/db/{identity,identity-schema}.ts`, `src/db/migrations/0006_closed_registration.sql`, `src/db/migrations/meta/{0006_snapshot,_journal}.json` |
+| Build and configuration | `.dockerignore`, `.env.example`, `compose.yaml`, `infra/compose.dev.yaml`, `package.json`, `playwright.config.ts` |
+| Tests | `tests/e2e/{course-builder.spec,identity.spec,learning.spec,test-accounts}.ts`, `tests/integration/{auth-smoke.mjs,identity-permissions.sql,invitation-mail-capture.mjs}`, `tests/unit/auth-request.test.ts` |
+| Documentation | `ARCHITECTURE.md`, `CODEX_HANDOFF.md`, `DATA_MODEL.md`, `PLANS.md`, `README.md`, `SECURITY_THREAT_MODEL.md` |
+
+| Check | Observed result |
+| --- | --- |
+| UI design review | Ran `python3 -B .agents/skills/ui-ux-pro-max/scripts/search.py 'online course' --domain product --rtl` and `python3 -B .agents/skills/ui-ux-pro-max/scripts/search.py 'forms and accessibility' --stack nextjs`. Reviewed the mockup in Chromium and applied the bundled Web Design Guidelines to labels, live feedback, focus, dialog keyboard behavior, content direction, and mobile overflow. |
+| Upgrade and schema | Applied migrations `0000`–`0005` to an isolated PostgreSQL 17 instance, seeded existing users, a credential and sessions, then applied `0006`. Existing credentials and sessions remained available. Verified restricted grants, Owner and Admin scope, session revocation, invitation single use, expiration, rotation and revocation, and the database rate limit. `pnpm db:generate` with the updated snapshot reported no schema changes. |
+| Local stack | `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml run --rm --build migrate` applied the migration. Rebuilt with `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml up -d --build --wait dev` on the existing `academy-dev_postgres-data` volume. `/api/health` and `/api/ready` returned HTTP 200. Both home pages displayed `0.3.0`. Both localized registration URLs returned 404. |
+| Local Chromium | Sign-in passed Arabic and English at 320px and 1280px in light and dark themes. Verified centered card, LTR credentials, logo, visible keyboard focus, password reveal, dialog dismissal and focus return, and no horizontal overflow. Final 320px account header measured 136px in both locales and themes. |
+| Contrast | Checked the account palette pairs. Light and dark supporting copy measured 5.48:1 and 7.91:1. The mint button text measured 12.35:1. Darkened the light input boundary to reach 3.25:1 against the field surface. The dark boundary measured 4.06:1. |
+| Isolated acceptance first pass | `bash infra/verify-phase4.sh` passed lint, type checking, 16 unit tests, production builds, migration replay, database grants and HTTP auth smoke. Nine of 11 Chromium tests passed. Corrected the ambiguous no-JavaScript field locator and waited for the System theme update before reloading. Log at `test-results/azaly-0.3.0-acceptance.T4lhyR.log`. |
+| Isolated acceptance retry | All 12 identity and public browser tests passed. The course-builder suite found the same password locator ambiguity in its existing sign-in helper. Updated the authoring and learner helpers to target the exact field label. Log at `test-results/azaly-0.3.0-acceptance.c73f7M.log`. |
+| Isolated acceptance completed | `bash infra/verify-phase4.sh` exited 0 in `academy-learning-d1e4f71a989f`. Frozen dependency install, lint, type check, 16 unit tests, production builds, migration replay, three database permission checks, origin rejection and session restart smoke passed. Chromium passed 14 tests, including 12 identity and public tests and the authoring and learning suites. Sign-in and the admin directory passed both locales, 320px and 1280px, and System, Light and Dark themes. Log at `test-results/azaly-0.3.0-acceptance.g1pGbA.log`. |
+| Final images | `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml build web` and `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml up -d --build --wait dev` passed with the final contrast adjustment. Both probes returned HTTP 200 after the rebuild. Chromium confirmed the final field border, displayed version, document direction, and no overflow at 320px in both locales and themes. Log at `test-results/azaly-0.3.0-images.uzpEET.log`. |
+| Source preservation | `git diff --check` passed. The original blueprint and course HTML Git hashes match `HEAD`. SHA-256 of the supplied sign-in mockup remains `6d8193c1eb8fea093ce1059dcb38133f61d321146733b044a5034794ccacd48e`. |
+
+The local `.env` has no invitation mail credentials. The isolated browser runner uses a loopback mail capture service. Production setup requires a verified sender, API key, reachable mail endpoint, and the canonical HTTPS origin. See the [invitation setup](README.md#provision-accounts-by-invitation).

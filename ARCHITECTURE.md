@@ -8,7 +8,7 @@ Phase 1 serves published catalog metadata and a legitimate empty state. Publishi
 
 The development and verification toolchain runs inside Docker. The development service bind-mounts application source and uses a separate Compose project from production. Chromium runs in a dedicated image with a separate test database. Production installs the frozen pnpm lockfile and uses an internal data network for PostgreSQL.
 
-Phase 2 adds Better Auth behind `/api/auth`, with a separate auth database pool and a sanitized session endpoint. The identity module owns localized account views, role-aware API and Server Action boundaries, and user management. Both administrative mutation entry points call the same audited database operation. Scoped course permissions join this boundary when course assignments exist.
+Phase 2 adds Better Auth behind `/api/auth`, with a separate auth database pool and a sanitized session endpoint. Version 0.3.0 closes public registration and moves account provisioning to `/api/admin/users`. The identity module uses scoped PostgreSQL functions for invitation state and audited account changes. Activation consumes a hashed, expiring token and creates the credentials in one transaction. The web service sends invitation messages through the configured mail provider.
 
 Phase 3 keeps authoring in the modular monolith. The bilingual builder submits commands to the authoring API through a separate database login. A scoped PostgreSQL function verifies the active actor session and course ownership before any draft read or write. Instructors can author courses they create. Owners and Admins can work across courses. The public catalog still reads version metadata under its existing read-only role.
 

@@ -4,6 +4,7 @@
 !pnpm-workspace.yaml
 !tsconfig.json
 !next.config.ts
+!proxy.ts
 !postcss.config.mjs
 !drizzle.config.ts
 !app/

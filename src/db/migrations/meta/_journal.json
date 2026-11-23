@@ -43,6 +43,13 @@
       "when": 1795382404000,
       "tag": "0005_learning",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795382405000,
+      "tag": "0006_closed_registration",
+      "breakpoints": true
     }
   ]
 }

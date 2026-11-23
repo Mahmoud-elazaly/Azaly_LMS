@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { prepareAuthRequest } from '../../src/features/identity/request';
 
 const origin = 'http://127.0.0.1:3000';
-const path = '/api/auth/sign-up/email';
+const path = '/api/auth/sign-in/email';
 
-function proxiedRegistration(payload: string) {
+function proxiedSignIn(payload: string) {
   const init: RequestInit & { duplex: 'half' } = {
     method: 'POST',
     headers: { Origin: origin, 'Content-Length': String(payload.length) },
@@ -25,9 +25,9 @@ function proxiedRegistration(payload: string) {
 }
 
 describe('authentication request preparation', () => {
-  it('rebuilds a proxied streamed registration request with only validated fields', async () => {
-    const fields = { name: 'Learner', email: 'learner@example.test', password: 'example-passphrase' };
-    const incoming = proxiedRegistration(JSON.stringify({
+  it('preserves the sign-in Proxy regression while stripping untrusted fields', async () => {
+    const fields = { email: 'learner@example.test', password: 'example-passphrase', rememberMe: false };
+    const incoming = proxiedSignIn(JSON.stringify({
       ...fields, role: 'OWNER', callbackURL: 'https://untrusted.example.test',
     }));
 
@@ -54,9 +54,9 @@ describe('authentication request preparation', () => {
     expect(upstream?.body).toBeNull();
   });
 
-  it('rejects malformed JSON and invalid registration fields', async () => {
+  it('rejects malformed JSON and invalid credentials', async () => {
     for (const payload of ['{', '{"email":"invalid","password":"short"}']) {
-      expect(await prepareAuthRequest(proxiedRegistration(payload), path)).toBeNull();
+      expect(await prepareAuthRequest(proxiedSignIn(payload), path)).toBeNull();
     }
   });
 });

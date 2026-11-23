@@ -9,7 +9,7 @@ const publicUser = z.object({
 });
 const sessionPayload = z.object({ user: publicUser }).nullable();
 
-const mutations = new Set(['/api/auth/sign-in/email', '/api/auth/sign-up/email', '/api/auth/sign-out']);
+const mutations = new Set(['/api/auth/sign-in/email', '/api/auth/sign-out']);
 
 function reply(body: Record<string, unknown>, status: number, cookies: string[] = []) {
   const headers = new Headers({ 'Cache-Control': 'no-store' });
@@ -52,7 +52,8 @@ async function handle(request: Request) {
         if (retryAfter) result.headers.set('Retry-After', retryAfter);
         return result;
       }
-      return reply({ error: 'AUTH_REQUEST_REJECTED' }, status, cookies);
+      const credentialRejection = path === '/api/auth/sign-in/email' && (status === 401 || status === 403);
+      return reply({ error: 'AUTH_REQUEST_REJECTED' }, credentialRejection ? 401 : status, cookies);
     }
 
     if (session) {
