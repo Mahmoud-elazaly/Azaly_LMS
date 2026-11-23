@@ -7,22 +7,37 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
   prefix=academy-learning
   if [[ "${PHASE5_TEST:-}" == 1 ]]; then prefix=academy-phase5; fi
   if [[ "${PHASE6_TEST:-}" == 1 ]]; then prefix=academy-phase6; fi
+  compose_files=(-f compose.yaml -f infra/compose.dev.yaml)
+  if [[ "${PHASE7_TEST:-}" == 1 ]]; then
+    prefix=academy-phase7
+    compose_files+=(-f infra/compose.lab.yaml --profile lab-local)
+    source infra/verify-phase7-support.sh
+    export LAB_CONTROL_SUBNET="$(phase7_control_subnet)"
+    export REAL_LAB_BRIDGE_URL=http://lab-bridge:8400
+  fi
   project="$prefix-$(openssl rand -hex 6)"
   container="$project-web"
-  dc() { docker compose -p "$project" -f compose.yaml -f infra/compose.dev.yaml "$@"; }
+  dc() { docker compose -p "$project" "${compose_files[@]}" "$@"; }
   cleanup() {
     local status=$?
     if (( status != 0 )); then
       docker logs --tail 50 "$container" >&2 || true
       dc logs --tail 50 postgres >&2 || true
       docker logs --tail 50 "$project-browser" >&2 || true
+      if [[ "${PHASE7_TEST:-}" == 1 ]]; then dc logs --tail 50 lab-controller lab-bridge >&2 || true; fi
     fi
     docker rm -f "$container" >/dev/null 2>&1 || true
     docker rm -f "$project-browser" >/dev/null 2>&1 || true
-    if [[ "${PHASE5_TEST:-}" == 1 ]]; then dc down || true; else dc stop || true; fi
-    return "$status"
+    if [[ "${PHASE7_TEST:-}" == 1 ]] && ! phase7_destroy_test_labs; then status=1; fi
+    if [[ "${PHASE5_TEST:-}" == 1 ]]; then
+      if ! dc down && [[ "${PHASE7_TEST:-}" == 1 ]]; then status=1; fi
+    else dc stop || true; fi
+    trap - EXIT
+    exit "$status"
   }
   trap cleanup EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
   export POSTGRES_PASSWORD="$(openssl rand -hex 32)"
   export POSTGRES_READER_PASSWORD="$(openssl rand -hex 32)"
   export BETTER_AUTH_SECRET="$(openssl rand -hex 32)"
@@ -40,7 +55,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
   dc build dev web
   dc run --rm --no-deps dev sh -eu -c 'pnpm lint && pnpm typecheck && pnpm test && pnpm build'
   dc up -d --wait postgres
-  dc run --rm --build migrate
+  if [[ "${PHASE7_TEST:-}" == 1 ]]; then phase7_upgrade; else dc run --rm --build migrate; fi
   dc run --rm migrate
   dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy \
     < tests/integration/identity-permissions.sql
@@ -83,6 +98,10 @@ try {
   await client.end();
 }
 JS
+  if [[ "${PHASE7_TEST:-}" == 1 ]]; then
+    dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase7-permissions.sql
+    phase7_start_services
+  fi
   dc run -d --no-deps --name "$container" web
   wait_for_app() {
     local attempt
@@ -106,6 +125,7 @@ JS
     pnpm exec playwright test tests/e2e/learning.spec.ts
     if [ "${PHASE5_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase5.spec.ts; fi
     if [ "${PHASE6_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase6.spec.ts; fi
+    if [ "${PHASE7_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase7.spec.ts; fi
   '
   docker rm "$project-browser" >/dev/null
   if [[ "${PHASE6_TEST:-}" == 1 ]]; then
@@ -115,4 +135,5 @@ JS
       console.log(JSON.stringify(labFiles));
     ' | bash infra/verify-phase6-snippets.sh "$project-practice"
   fi
+  if [[ "${PHASE7_TEST:-}" == 1 ]]; then phase7_check_worker; fi
 )

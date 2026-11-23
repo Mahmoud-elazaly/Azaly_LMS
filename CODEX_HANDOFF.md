@@ -4,8 +4,8 @@ Last reviewed **2026-11-23**. Repository `/home/azaly/Azaly-LMS`. The handoff re
 
 ## Where to resume
 
-- **Phases 0–5 are complete.** The published `v0.4.0` baseline is commit `74ee72b` on `main`.
-- **Phase 6 adds the curated Prometheus and Grafana path for v0.5.0.** See the [operator procedure](README.md#publish-the-prometheus-and-grafana-course) and [acceptance evidence](PLANS.md#phase-6--curated-prometheus-and-grafana-learning-path).
+- **Phases 0–6 are complete.** The published `v0.5.0` baseline is commit `b977aba` on `main`.
+- **Phase 7 adds the isolated NGINX pilot for v0.6.0.** See the [operator setup](README.md#enable-the-nginx-real-lab-pilot) and [acceptance evidence](PLANS.md#phase-7--isolated-nginx-real-lab-pilot).
 
 ## Project and architecture
 
@@ -17,7 +17,7 @@ The root uses the saved locale and defaults to `/ar`. Locale-prefixed pages use 
 
 The preferred deployment is a trusted TLS reverse proxy in front of the loopback-bound web service. PostgreSQL is on the internal Compose data network with a named volume and no published host port. The web, dev, browser, and migration runtime processes use the non-root Node user. The web image runs Next.js standalone via `node server.js`. The dev service bind-mounts app, source, and tests read-only. Rebuild the appropriate image when manifests, root configuration, or migrations change.
 
-Guided Labs are intended for learner-managed infrastructure with explicit completion provenance. The future Real Lab controller and terminal gateway belong in a separately isolated execution plane. The LMS web process must never receive a Docker socket, privileged orchestration credentials, or arbitrary shell execution. See [LAB_ARCHITECTURE.md](LAB_ARCHITECTURE.md) and [SECURITY_THREAT_MODEL.md](SECURITY_THREAT_MODEL.md).
+Guided Labs are intended for learner-managed infrastructure with explicit completion provenance. The NGINX pilot uses an out-of-process bridge and a controller on a dedicated worker in deployments. The LMS web process must never receive a Docker socket, privileged orchestration credentials, or arbitrary shell execution. See [LAB_ARCHITECTURE.md](LAB_ARCHITECTURE.md) and [SECURITY_THREAT_MODEL.md](SECURITY_THREAT_MODEL.md).
 
 ## Phases and delivered features
 
@@ -29,7 +29,9 @@ Guided Labs are intended for learner-managed infrastructure with explicit comple
 | 3 | Closed and pushed. Browser authoring in both languages, structured paragraph/heading/code/callout blocks, module/lesson/block ordering, protected preview, draft saves, publishing, republishing, withdrawal and archival. Verified two unrelated courses created and published entirely through the browser. |
 | 4 | Closed. Bilingual enrollment, My learning, course player, completion, bookmarks, resume, localized quizzes, server-side grading, and private grade history. |
 | 5 | WSL gate passed. Scoped question bank, versioned course copies, Guided Lab authoring and attempts, and an instructor review queue. Gate evidence is in PLANS.md. |
-| 6–8 | Planned. Phase 6 delivers a curated Prometheus/Grafana learning path. Phase 7 pilots an isolated NGINX Real Lab. Phase 8 covers restore drills, monitoring, capacity and security hardening before external enrollment. |
+| 6 | Curated Prometheus and Grafana learning path. |
+| 7 | Opt-in isolated NGINX Real Lab pilot. |
+| 8 | Restore drills, monitoring, capacity and security hardening before external enrollment. |
 
 ### Role and publishing decisions
 
@@ -108,11 +110,11 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
 ## Known limitations and open items
 
-- GitHub CI runs `bash infra/verify.sh` for the full platform gate, including the Phase 6 bilingual course journey and practice configuration checks.
+- GitHub CI runs `bash infra/verify.sh` for the full platform gate, including the Phase 6 bilingual course journey and Phase 7 worker isolation checks.
 - `/api/health` signals process liveness. `/api/ready` currently checks the catalog pool and catalog schema only. A healthy response alone does not validate auth, authoring, or learner credentials.
 - Better Auth sign-in limits are per process. Invitation activation and management limits use PostgreSQL. Terminate TLS through a trusted proxy that overwrites `X-Academy-Client-IP` with the verified client IP and keeps the web port private. Requests without a usable address share the loopback bucket. See [invitation setup](README.md#provision-accounts-by-invitation) for mail configuration.
 - Switching language preserves the selected draft or enrollment and translates validated sign-in return paths.
-- Assessment authors must maintain equivalent answer ordering across languages. Enrollment upgrades are deliberate. Private media delivery, the Real Lab controller, and production restore and monitoring remain roadmap items.
+- Assessment authors must maintain equivalent answer ordering across languages. Enrollment upgrades are deliberate. Private media delivery and production restore and monitoring remain roadmap items.
 
 ## Exact next steps
 
@@ -137,7 +139,7 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
    Review the actual diff and new files. Stage and commit only with authorization. If the managed Codex sandbox reports a read-only `.git` directory or denied Docker socket, use the WSL host session. Keep existing volumes and project names. Avoid volume-removal flags.
 3. **For a separately authorized deployment**, follow [README.md](README.md#phase-4-learner-experience-on-wsl) to migrate and provision the learner login against the intended existing project. Update the environment and recreate its web container. Verify both HTTP probes and exercise a real authenticated learner flow. Do not reuse test passwords or restore test fixtures into an existing deployment.
-4. **Review the Phase 6 gate evidence in PLANS.md.** Review the curated content, publication boundary, and instructor review behavior before merging. The NGINX execution pilot remains in Phase 7.
+4. **Review the Phase 7 gate evidence in PLANS.md.** Review the controller deployment boundary, the verified-provenance writes, and the cleanup evidence before merging.
 
 ## Keeping this handoff current
 

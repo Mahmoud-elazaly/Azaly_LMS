@@ -1,0 +1,48 @@
+services:
+  lab-bridge:
+    build:
+      context: .
+      target: lab-bridge
+    environment:
+      REAL_LAB_DATABASE_URL: ${REAL_LAB_DATABASE_URL:-}
+      LAB_CONTROLLER_URL: ${LAB_CONTROLLER_URL:-http://lab-controller:8401}
+      LAB_CONTROLLER_SECRET: ${LAB_CONTROLLER_SECRET:-}
+    networks: [data, frontend, lab-control]
+    init: true
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8400/health').then(r => { if (!r.ok) process.exitCode = 1 }).catch(() => { process.exitCode = 1 })"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+  lab-controller:
+    profiles: [lab-local]
+    build:
+      context: .
+      target: lab-controller
+    environment:
+      LAB_NAMESPACE: ${COMPOSE_PROJECT_NAME:-academy}
+      LAB_CONTROLLER_SECRET: ${LAB_CONTROLLER_SECRET:-}
+      LAB_SANDBOX_IMAGE: ${LAB_SANDBOX_IMAGE:-}
+    networks: [lab-control]
+    init: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8401/health').then(r => { if (!r.ok) process.exitCode = 1 }).catch(() => { process.exitCode = 1 })"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+networks:
+  lab-control:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${LAB_CONTROL_SUBNET:-10.246.70.0/28}

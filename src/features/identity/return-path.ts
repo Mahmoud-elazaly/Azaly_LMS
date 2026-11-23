@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { Locale } from '../../i18n/locales';
 
 const destinations = new Set(['dashboard', 'profile', 'admin', 'admin/users', 'admin/reports', 'instructor', 'student',
-  'builder', 'learning', 'question-bank', 'guided-reviews']);
+  'builder', 'learning', 'real-lab', 'question-bank', 'guided-reviews']);
 
 export function selectedCoursePath(locale: Locale, page: 'builder' | 'learning', id: unknown) {
   const base = `/${locale}/${page}`;

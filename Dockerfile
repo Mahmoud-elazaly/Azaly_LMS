@@ -56,6 +56,25 @@ ENV NEXT_TELEMETRY_DISABLED=1
 USER node
 CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
 
+FROM nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236 AS lab-sandbox
+COPY infra/real-lab/nginx.conf infra/real-lab/sandbox-start.sh infra/real-lab/sandbox-apply.sh /opt/azaly-lab/
+USER 101:101
+ENTRYPOINT ["/bin/sh", "/opt/azaly-lab/sandbox-start.sh"]
+CMD []
+
+FROM docker:29-cli@sha256:34507eb5069d8be82c95dd3b6987d4250fd5fee49b82e2509b7d7a7030740d6d AS lab-docker-client
+
+FROM node:24-bookworm-slim AS lab-controller
+WORKDIR /app
+COPY --from=lab-docker-client /usr/local/bin/docker /usr/local/bin/docker
+COPY infra/real-lab/controller.mjs infra/real-lab/checker.mjs infra/real-lab/protocol.mjs ./
+CMD ["node", "controller.mjs"]
+
+FROM dependencies AS lab-bridge
+COPY infra/real-lab/bridge.mjs infra/real-lab/protocol.mjs ./
+USER node
+CMD ["node", "bridge.mjs"]
+
 FROM node:24-bookworm-slim AS web
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
