@@ -28,12 +28,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 USER node
 CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
 
-FROM dev AS browser
-USER root
+FROM dependencies AS browser
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 RUN pnpm exec playwright install --with-deps chromium \
     && rm -rf /var/lib/apt/lists/*
+COPY --chown=node:node . .
+RUN chown node:node /app
+ENV NEXT_TELEMETRY_DISABLED=1
 USER node
+CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
 
 FROM node:24-bookworm-slim AS web
 WORKDIR /app

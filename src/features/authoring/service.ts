@@ -1,5 +1,4 @@
-import { Pool } from 'pg';
-import { readDatabaseUrl } from '../../db/env';
+import { authoringCommand } from '../../db/authoring';
 import { AuthorizationError } from '../identity/policy';
 import { requireSession } from '../identity/session';
 import { authorRoles, canPublish, documentSchema, type BuilderCourse, type CourseDraft, type Mutation } from './policy';
@@ -10,22 +9,10 @@ export class AuthoringError extends Error {
   }
 }
 
-let pool: Pool | undefined;
-
 async function execute<T>(token: string, command: string, id: string | null = null,
   payload: object | null = null, version: number | null = null): Promise<T> {
-  pool ??= new Pool({
-    connectionString: readDatabaseUrl({ DATABASE_URL: process.env.AUTHORING_DATABASE_URL }),
-    max: 4, connectionTimeoutMillis: 2500, statement_timeout: 5000,
-  }).on('error', () => console.error('An idle authoring database connection failed.'));
   try {
-    const result = await pool.query<{ result: T }>(
-      'SELECT authoring.course_command($1, $2, $3, $4, $5) AS result',
-      [token, command, id, payload, version],
-    );
-    const row = result.rows[0];
-    if (!row) throw new Error('Authoring command returned no row');
-    return row.result;
+    return await authoringCommand<T>(token, command, id, payload, version);
   } catch (error) {
     const code = error instanceof Error && 'code' in error ? error.code : undefined;
     if (code === '42501') throw new AuthorizationError(403);

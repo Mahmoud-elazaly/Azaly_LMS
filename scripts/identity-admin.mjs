@@ -50,9 +50,13 @@ async function bootstrap(client) {
   return 'Owner initialized.';
 }
 
-async function provision(client, authoring) {
-  const login = authoring ? 'academy_author' : 'academy_auth';
-  const group = authoring ? 'academy_authoring_runtime' : 'academy_auth_runtime';
+const databaseLogins = {
+  provision: ['academy_auth', 'academy_auth_runtime'],
+  'provision-authoring': ['academy_author', 'academy_authoring_runtime'],
+  'provision-learner': ['academy_learner', 'academy_learner_runtime'],
+};
+
+async function provision(client, [login, group]) {
   const result = z.object({ password: z.string().regex(/^[a-f0-9]{64}$/) }).safeParse(readInput());
   if (!result.success) throw new OperatorError('Provide a password generated with openssl rand -hex 32.');
   const existing = await client.query(
@@ -60,7 +64,7 @@ async function provision(client, authoring) {
       AND pg_has_role(login.oid, $2::name, 'USAGE')
       AND NOT EXISTS (
         SELECT FROM pg_roles other
-        WHERE other.rolname IN ('academy_reader', 'academy_auth_runtime', 'academy_authoring_runtime')
+        WHERE other.rolname IN ('academy_reader', 'academy_auth_runtime', 'academy_authoring_runtime', 'academy_learner_runtime')
           AND other.rolname <> $2 AND pg_has_role(login.oid, other.oid, 'MEMBER')
       ) AS permitted
       FROM pg_roles login WHERE rolname = $1`, [login, group],
@@ -87,7 +91,7 @@ async function provision(client, authoring) {
 
 async function main() {
   const command = process.argv[2];
-  if (command !== 'bootstrap' && command !== 'provision' && command !== 'provision-authoring') throw new OperatorError('Unknown identity command.');
+  if (command !== 'bootstrap' && !Object.hasOwn(databaseLogins, command)) throw new OperatorError('Unknown identity command.');
   if (!process.env.DATABASE_URL) throw new OperatorError('A migration-owner DATABASE_URL is required.');
   const pool = new Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 2500 });
   try {
@@ -96,7 +100,7 @@ async function main() {
       await client.query('BEGIN');
       // Serialize each administrative operation across CLI invocations.
       await client.query('SELECT pg_advisory_xact_lock($1, $2)', [1861653101, command === 'bootstrap' ? 1 : 2]);
-      const message = await (command === 'bootstrap' ? bootstrap(client) : provision(client, command === 'provision-authoring'));
+      const message = await (command === 'bootstrap' ? bootstrap(client) : provision(client, databaseLogins[command]));
       await client.query('COMMIT');
       console.log(message);
     } catch (error) {

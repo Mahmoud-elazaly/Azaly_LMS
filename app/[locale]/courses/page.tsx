@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { readPublicCatalog } from '@/features/catalog/public-catalog';
+import { readPublicCatalog } from '@/db/public-catalog';
 import { isLocale } from '@/i18n/locales';
 import { copy } from '@/i18n/messages';
 

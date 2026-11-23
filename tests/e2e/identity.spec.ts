@@ -33,9 +33,13 @@ test.describe('identity on a dedicated database', () => {
     await page.getByRole('button', { name: 'إنشاء حساب' }).click();
     await expect(page).toHaveURL(/\/ar\/login\?.*registered=1/);
     await page.getByLabel('البريد الإلكتروني').fill(email);
+    await page.route('**/api/auth/sign-in/email', (route) => route.fulfill({ status: 503 }), { times: 1 });
+    await page.getByLabel('كلمة المرور').fill(password);
+    await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+    await expect(page.locator('form.identity-form').getByRole('alert')).toContainText('تعذّر الاتصال بخدمة الحسابات');
     await page.getByLabel('كلمة المرور').fill('wrong password');
     await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
-    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.locator('form.identity-form').getByRole('alert')).toContainText('تحقّق من البيانات');
     await page.getByLabel('كلمة المرور').fill(password);
     await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
     await expect(page).toHaveURL(/\/ar\/profile$/);

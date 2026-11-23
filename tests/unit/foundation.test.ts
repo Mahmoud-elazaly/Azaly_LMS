@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readDatabaseUrl } from '../../src/db/env';
 import { direction, isLocale } from '../../src/i18n/locales';
-import { parseTheme } from '../../src/ui/theme';
+import { parseTheme } from '../../app/_components/theme';
 
 describe('foundation configuration', () => {
   it('maps only supported locales to document directions', () => {

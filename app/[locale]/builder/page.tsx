@@ -5,21 +5,22 @@ import { builderCopy } from '@/features/authoring/copy';
 import { authorRoles } from '@/features/authoring/policy';
 import { listCourses, readDraft } from '@/features/authoring/service';
 import { AuthorizationError } from '@/features/identity/policy';
+import { selectedCoursePath } from '@/features/identity/return-path';
 import { currentPrincipal } from '@/features/identity/session';
 import { direction, isLocale } from '@/i18n/locales';
-import { CourseCreator, CourseEditor } from '@/ui/course-builder';
+import { CourseCreator, CourseEditor } from '../../_components/course-builder';
 
 export default async function BuilderPage({ params, searchParams }: PageProps<'/[locale]/builder'>) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const text = builderCopy(locale);
+  const { id } = await searchParams;
   const principal = await currentPrincipal();
-  if (!principal) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/builder`)}`);
+  if (!principal) redirect(`/${locale}/login?next=${encodeURIComponent(selectedCoursePath(locale, 'builder', id))}`);
   if (!authorRoles.some((role) => role === principal.role)) {
     return <section className="page-copy"><h1>{text.builder}</h1><p>{text.denied}</p></section>;
   }
 
-  const { id } = await searchParams;
   if (id !== undefined && !z.uuid().safeParse(id).success) notFound();
   let result: { courses: Awaited<ReturnType<typeof listCourses>>; draft: Awaited<ReturnType<typeof readDraft>> | null }
     | { error: string };

@@ -1,6 +1,5 @@
-import { asc, inArray, sql } from 'drizzle-orm';
+import { changeUser, selectUsers } from '../../db/identity';
 import { z } from 'zod';
-import { user } from '../../db/identity-schema';
 import { getAuth } from './auth';
 import { AuthorizationError } from './policy';
 import { requireSession } from './session';
@@ -14,18 +13,13 @@ export const managementInput = z.discriminatedUnion('operation', [
 
 export async function listUsers(requestHeaders?: Headers) {
   const { principal } = await requireSession(managers, requestHeaders);
-  return getAuth().db.select({
-    id: user.id, name: user.name, email: user.email, role: user.role, banned: user.banned,
-  }).from(user).where(principal.role === 'ADMIN' ? inArray(user.role, ['INSTRUCTOR', 'STUDENT']) : undefined)
-    .orderBy(asc(user.email));
+  return selectUsers(getAuth().db, principal.role === 'ADMIN');
 }
 
 export async function manageUser(input: z.infer<typeof managementInput>, requestHeaders: Headers) {
   const { token } = await requireSession(managers, requestHeaders);
   const role = input.operation === 'role' ? input.role : null;
   const banned = input.operation === 'status' ? input.banned : null;
-  const result = await getAuth().db.execute<{ changed: boolean }>(sql`
-    SELECT identity.manage_user(${token}, ${input.id}, ${role}::identity.user_role, ${banned}::boolean) AS changed
-  `);
-  if (!result.rows[0]?.changed) throw new AuthorizationError(403);
+  const changed = await changeUser(getAuth().db, token, input.id, role, banned);
+  if (!changed) throw new AuthorizationError(403);
 }

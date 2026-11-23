@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { learningCopy } from '@/features/learning/copy';
 import { notFound, redirect } from 'next/navigation';
 import { updateUser } from '@/features/identity/actions';
 import { identityCopy } from '@/features/identity/copy';
@@ -7,7 +8,7 @@ import { AuthorizationError, canAssignRole } from '@/features/identity/policy';
 import { returnPath } from '@/features/identity/return-path';
 import { currentPrincipal } from '@/features/identity/session';
 import { isLocale } from '@/i18n/locales';
-import { AuthForm } from '@/ui/auth-form';
+import { AuthForm } from '../../_components/auth-form';
 
 export default async function AccountPage({ params, searchParams }: PageProps<'/[locale]/[account]'>) {
   const { locale, account } = await params;
@@ -90,6 +91,7 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
       <p>{t.welcome} <bdi>{principal.name}</bdi></p>
       <p>{t[principal.role]}</p>
       <Link href={`/${locale}/profile`}>{t.profile}</Link>
+      {principal.role === 'STUDENT' && <p><Link href={`/${locale}/learning`}>{learningCopy(locale).learning}</Link></p>}
       {account === 'dashboard' && (principal.role === 'OWNER' || principal.role === 'ADMIN')
         && <p><Link href={`/${locale}/admin`}>{t.admin}</Link></p>}
     </>}

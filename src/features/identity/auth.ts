@@ -2,10 +2,8 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin } from 'better-auth/plugins';
 import { createAccessControl } from 'better-auth/plugins/access';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
 import { z } from 'zod';
-import { readDatabaseUrl } from '../../db/env';
+import { identityDatabase } from '../../db/identity';
 import { account, session, user, verification } from '../../db/identity-schema';
 import { reportAuthFailure } from './diagnostics';
 
@@ -32,11 +30,7 @@ function createAuth() {
   const config = environment.safeParse(process.env);
   if (!config.success) throw new Error('Authentication environment is missing or invalid.');
   const origin = new URL(config.data.BETTER_AUTH_URL).origin;
-  const connectionString = readDatabaseUrl({ DATABASE_URL: config.data.AUTH_DATABASE_URL });
-  const pool = new Pool({ connectionString, max: 8, connectionTimeoutMillis: 2500 });
-  pool.on('error', () => console.error('An idle authentication database connection failed.'));
-
-  const db = drizzle(pool);
+  const db = identityDatabase(config.data.AUTH_DATABASE_URL);
   return {
     origin, db,
     auth: betterAuth({

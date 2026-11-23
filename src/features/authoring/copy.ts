@@ -3,6 +3,8 @@ import type { Locale } from '../../i18n/locales';
 const en = {
   builder: 'Course builder', preview: 'Preview draft', create: 'Create course', slug: 'Course slug', position: 'Catalog order',
   courseTitle: 'Course title', summary: 'Course summary', language: 'Content language',
+  addQuiz: 'Add quiz', quizTitle: 'Quiz title', addQuestion: 'Add question', questionPrompt: 'Question',
+  choice: 'Choice', correctChoice: 'Correct choice',
   addModule: 'Add module', addLesson: 'Add lesson', addBlock: 'Add block',
   moduleTitle: 'Module title', lessonTitle: 'Lesson title', blockText: 'Block content', blockType: 'Block type',
   paragraph: 'Paragraph', heading: 'Heading', code: 'Code', callout: 'Callout',
@@ -19,6 +21,8 @@ const en = {
 const ar: typeof en = {
   builder: 'منشئ الدورات', preview: 'معاينة المسودة', create: 'إنشاء دورة', slug: 'معرّف الدورة', position: 'ترتيب الدليل',
   courseTitle: 'عنوان الدورة', summary: 'ملخص الدورة', language: 'لغة المحتوى',
+  addQuiz: 'إضافة اختبار', quizTitle: 'عنوان الاختبار', addQuestion: 'إضافة سؤال', questionPrompt: 'السؤال',
+  choice: 'الخيار', correctChoice: 'الخيار الصحيح',
   addModule: 'إضافة وحدة', addLesson: 'إضافة درس', addBlock: 'إضافة كتلة',
   moduleTitle: 'عنوان الوحدة', lessonTitle: 'عنوان الدرس', blockText: 'محتوى الكتلة', blockType: 'نوع الكتلة',
   paragraph: 'فقرة', heading: 'عنوان', code: 'شفرة', callout: 'تنبيه',

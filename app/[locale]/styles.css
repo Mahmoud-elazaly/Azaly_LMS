@@ -86,7 +86,9 @@ pre { @apply overflow-x-auto rounded-lg p-4; text-align: left; background: var(-
 .identity-users { @apply grid gap-4; }
 .identity-inline { @apply mt-3 flex flex-wrap items-end gap-2; }
 
-.builder-fields { @apply grid max-w-3xl gap-4; }
+.builder-fields { @apply grid min-w-0 max-w-3xl gap-4; grid-template-columns: minmax(0, 1fr); }
+.builder-fields fieldset, .builder-fields label, .builder-fields input, .builder-fields textarea { min-inline-size: 0; }
+.builder-fields pre { max-inline-size: 100%; }
 .builder-fields label { @apply grid gap-1; }
 .builder-fields input, .builder-fields textarea, .builder-fields select {
   @apply rounded-md border px-3 py-2;
@@ -95,3 +97,5 @@ pre { @apply overflow-x-auto rounded-lg p-4; text-align: left; background: var(-
   border-color: var(--line);
 }
 .builder-controls { @apply flex flex-wrap gap-2; }
+
+.builder-fields .learning-choice { display: flex; align-items: baseline; gap: .5rem; }

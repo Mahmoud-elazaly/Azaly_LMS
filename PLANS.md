@@ -193,3 +193,28 @@ Added Vitest validation and role tests, rollback-only database permission checks
 | Playwright course builder | 1/1 passed. It verified author scope and browser-only creation and bilingual publication of independent courses, draft isolation, republishing, withdrawal, and archival. |
 
 The successful rerun supersedes the earlier lint failure and pending verification. Phase 4 has not started.
+
+## Phase 4 — Completed
+
+Implemented version-pinned enrollments, the bilingual learner player and My learning, lesson completion, bookmarks, resume across sessions, and the course-level quiz and grade history requested for this phase. Added optional localized multiple-choice questions to the course builder. Published revisions retain their own quiz definitions and private answer keys. New enrollments require a published structured snapshot. Existing enrollments continue using their pinned revision after a course is republished or withdrawn.
+
+Migration 0005 adds learner records and a scoped database function owned by a restricted non-superuser role. The separate learner connection has no underlying table privileges. The function authenticates the Student and enforces enrollment ownership, grades selected answers against the pinned snapshot, and records immutable attempts. Catalog, identity and authoring runtime grants remain unchanged. No new npm dependencies were introduced.
+
+Added Vitest policy checks, rollback-only PostgreSQL permission and grading tests, and a Playwright learner journey. The isolated Phase 4 runner also rehearses the prior browser suites. Local Bash, non-JSX source syntax, Compose configuration, and migration metadata checks were performed. The WSL runtime checks were pending at implementation time. The closure record follows.
+
+### Application review and Phase 4 closure — 2026-11-23
+
+Reviewed the implemented public, account, management, authoring and learner flows against the blueprint. Shared UI now lives in `app/_components`. Database queries, pool creation and command calls live in `src/db`. Services in `src/features` retain authorization and publication policy. The public query still selects the latest eligible published revision and its requested translation.
+
+Fixed loss of the selected draft or enrollment across login and language changes. Guests can sign in from a course detail page and return there to enroll. Arabic and English account forms distinguish service outages from rejected submissions. The player constrains long code samples to their own scroll area on small screens. Publishing checks for started translations in lesson and quiz content as well as course metadata. CI now invokes the authenticated acceptance suites, and Playwright exercises the standalone server.
+
+| Check | Observed result |
+| --- | --- |
+| `bash infra/verify-phase4.sh` | Final run exited 0 in isolated project `academy-learning-bcc7a9652c90`. Log at `/tmp/azaly-lms-review-final-20261123.log`. An earlier run identified an ambiguous alert selector. The final assertion checks the form itself. |
+| Quality and build | Frozen dependency layer, zero-warning ESLint, route generation, TypeScript and production build passed. Vitest passed 16/16 across five files. |
+| Database and HTTP | Migrations applied twice. Identity, authoring and learner SQL permission checks passed. Owner bootstrap was repeatable. Auth smoke verified origin enforcement, sign-in, session persistence across restart and revocation on logout. |
+| Browser | Playwright passed 9/9 in Chromium. Seven public and identity tests, one course builder journey and one learner journey passed. The learner journey verified a 375px Arabic player with a long LTR code line, an Arabic/English round trip on the same enrollment and return to that enrollment after login. |
+| Development stack | Read-only requests from the running `academy-dev` service returned HTTP 200 for `/api/health`, `/api/ready`, `/en/login`, `/ar/login` and `/api/auth/get-session`. Node pg connection and schema checks passed for the configured auth, authoring and learner roles. |
+| Static and source checks | `git diff --check`, Bash syntax checks for the four phase runners and `docker compose -f compose.yaml -f infra/compose.dev.yaml --profile test config --quiet` passed. `git hash-object prometheus-grafana-course-bilingual.html` matched the tracked blob. |
+
+The Phase 4 acceptance gate is complete. Authenticated write tests used the isolated database. Hosted CI execution, other browser engines, manual assistive-technology testing and production load testing were outside this run.

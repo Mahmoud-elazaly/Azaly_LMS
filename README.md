@@ -41,7 +41,7 @@ dc run --rm --build migrate
 dc up -d dev
 ```
 
-Open [Arabic](http://localhost:3000/ar) or [English](http://localhost:3000/en). Changes in `app`, `src`, and `tests` are available to the container through bind mounts. Next.js reloads application source changes. Rebuild the development image after changing package manifests, the lockfile, or root configuration with `dc up -d --build dev`. Rebuild the migration image when migrations change. Stop development with `dc stop` and restart with `dc up -d postgres dev`.
+Open [Arabic](http://127.0.0.1:3000/ar) or [English](http://127.0.0.1:3000/en). If you configured a different `BETTER_AUTH_URL`, open that origin so sign-in requests pass the origin check. Changes in `app`, `src`, and `tests` are available to the container through bind mounts. Next.js reloads application source changes. Rebuild the development image after changing package manifests, the lockfile, or root configuration with `dc up -d --build dev`. Rebuild the migration image when migrations change. Stop development with `dc stop` and restart with `dc up -d postgres dev`.
 
 ## Quality checks
 
@@ -112,7 +112,7 @@ Run this in WSL against a new Compose project. It applies both migrations twice,
 )
 ```
 
-The migration runner must be able to create a PostgreSQL role. The Compose database owner has this privilege. The authentication runtime group has no login, and this milestone does not yet expose authentication routes.
+The migration runner must be able to create a PostgreSQL role. The Compose database owner has this privilege. The migration creates the authentication runtime group. Provision the authentication login and first Owner using the setup below.
 
 ## Reverse proxy and operations
 
@@ -120,11 +120,11 @@ Run the web service behind a trusted TLS reverse proxy on the same host. Preserv
 
 ## Scope
 
-Phase 1 provides anonymous browsing and independent locale and theme preferences. Authentication, authoring, enrollments, assessments and lab execution are later phases.
+The app supports anonymous catalog browsing, student registration and sign-in, role-based course authoring, version-pinned enrollment, lesson progress, bookmarks and graded course quizzes. Guided Labs and isolated lab execution are scheduled separately in ROADMAP.md.
 
 ## Phase 2 on WSL
 
-Better Auth 1.7.27 requires Drizzle ORM 0.45.2 or later on the stable 0.45 line. Refresh the lockfile from a copy of the existing graph before using any frozen Docker build:
+Better Auth 1.7.27 requires Drizzle ORM 0.45.2 or later on the stable 0.45 line. The repository includes a verified lockfile. When intentionally updating dependencies, refresh it from a copy of the existing graph:
 
 ```bash
 (
@@ -183,3 +183,21 @@ unset author_db_password
 ```
 
 Set `AUTHORING_DATABASE_URL` in the ignored `.env` to `postgresql://academy_author:YOUR_AUTHORING_DB_PASSWORD@postgres:5432/academy` using the same password and recreate the web service to load the setting. Use the role-aware navigation to open `/en/builder` or `/ar/builder`. Complete one language to publish, or complete both to publish in both catalogs. Any started course translation must have its own complete module, lesson and block text. Archive hides the course while preserving its revisions and slug.
+
+## Phase 4 learner experience on WSL
+
+Run `bash infra/verify-phase4.sh` to verify the learner experience and prior regression suites in a separate Compose project. The runner publishes no host ports, prints container logs on failure, and retains the isolated volume.
+
+For an existing deployment, apply the additive migration with the migration service, generate a distinct learner password with `openssl rand -hex 32`, and provision the login in the deployment's Compose project:
+
+```bash
+read -rs -p 'Learner database password (64 lowercase hex characters): ' learner_db_password
+printf '\n'
+printf '{"password":"%s"}\n' "$learner_db_password" |
+  docker compose run --rm -T migrate node scripts/identity-admin.mjs provision-learner
+unset learner_db_password
+```
+
+Set `LEARNER_DATABASE_URL` in the ignored `.env` to `postgresql://academy_learner:YOUR_LEARNER_DB_PASSWORD@postgres:5432/academy` and recreate the web service to load it. Students enroll from published course details and resume from My learning. Enrollments stay pinned to the revision selected at enrollment. Withdrawal prevents new enrollments while existing learners can continue on their original published revision. Catalog entries created before structured snapshots must be republished with structured content before they can accept enrollments.
+
+Use the existing course builder to add optional multiple-choice quizzes. Author each published locale independently and keep the choices in equivalent order across languages because the correct index is shared. Learners see their own grades. Correct answers are kept in the private publication snapshot.

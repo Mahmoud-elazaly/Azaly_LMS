@@ -36,9 +36,10 @@ export function AuthForm({ locale, mode, destination }: {
         window.location.assign(destination);
         return;
       }
-      setError(response.status === 429 ? t.limited : t.rejected);
+      if (response.status === 429) setError(t.limited);
+      else setError(response.status >= 500 ? t.unavailable : t.rejected);
     } catch {
-      setError(t.rejected);
+      setError(t.unavailable);
     } finally {
       setPending(false);
     }

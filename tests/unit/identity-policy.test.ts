@@ -29,7 +29,10 @@ describe('account return paths', () => {
   it('rejects external, encoded, and cross-locale destinations', async () => {
     const { returnPath } = await import('../../src/features/identity/return-path');
     expect(returnPath('ar', '/ar/profile')).toBe('/ar/profile');
-    for (const value of ['//evil.test', '/ar/%2f%2fevil.test', '/en/profile', '/ar/profile/extra', ['profile']]) {
+    const selected = '/ar/learning?id=1800ab00-20de-4c60-8175-55db381a66bc';
+    expect(returnPath('ar', selected)).toBe(selected);
+    expect(returnPath('ar', '/ar/courses/linux-101')).toBe('/ar/courses/linux-101');
+    for (const value of [selected + '&next=/ar/admin', '/ar/learning?id=invalid', '/ar/courses/..', '//evil.test', '/ar/%2f%2fevil.test', '/en/profile', '/ar/profile/extra', ['profile']]) {
       expect(returnPath('ar', value)).toBe('/ar/dashboard');
     }
   });

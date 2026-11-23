@@ -5,12 +5,13 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { direction, isLocale } from '@/i18n/locales';
 import { copy } from '@/i18n/messages';
-import { Navigation } from '@/ui/navigation';
-import { parseTheme, themes } from '@/ui/theme';
-import { saveTheme } from '@/ui/theme-action';
+import { Navigation } from '../_components/navigation';
+import { parseTheme, themes } from '../_components/theme';
+import { saveTheme } from '../_components/theme-action';
 import { identityCopy } from '@/features/identity/copy';
 import { currentPrincipal } from '@/features/identity/session';
-import { AuthForm } from '@/ui/auth-form';
+import { AuthForm } from '../_components/auth-form';
+import { learningCopy } from '@/features/learning/copy';
 import { builderCopy } from '@/features/authoring/copy';
 import './styles.css';
 
@@ -30,7 +31,7 @@ export default async function Layout({ children, params }: { children: ReactNode
     { path: '/profile', label: account.profile },
     ...(principal.role !== 'STUDENT' ? [{ path: '/builder', label: builderCopy(locale).builder }] : []),
     ...(principal.role === 'INSTRUCTOR' ? [{ path: '/instructor', label: account.instructor }] : []),
-    ...(principal.role === 'STUDENT' ? [{ path: '/student', label: account.student }] : []),
+    ...(principal.role === 'STUDENT' ? [{ path: '/student', label: account.student }, { path: '/learning', label: learningCopy(locale).learning }] : []),
     ...(principal.role === 'OWNER' || principal.role === 'ADMIN' ? [{ path: '/admin', label: account.admin }] : []),
   ] : [{ path: '/login', label: account.login }, { path: '/register', label: account.register }];
   const theme = parseTheme((await cookies()).get('academy-theme')?.value);

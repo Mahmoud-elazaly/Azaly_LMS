@@ -24,6 +24,8 @@ describe('authoring boundaries', () => {
     const document = sample();
     expect(documentSchema.safeParse(document).success).toBe(true);
     expect(canPublish(document)).toBe(true);
+    document.modules[0].lessons[0].blocks[0].translations.ar = 'ls -l';
+    expect(canPublish(document)).toBe(false);
     document.translations.ar = { title: 'لينكس', summary: 'مقدمة' };
     expect(canPublish(document)).toBe(false);
     const courseModule = document.modules[0];
