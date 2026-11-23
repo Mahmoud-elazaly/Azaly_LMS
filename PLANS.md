@@ -218,3 +218,26 @@ Fixed loss of the selected draft or enrollment across login and language changes
 | Static and source checks | `git diff --check`, Bash syntax checks for the four phase runners and `docker compose -f compose.yaml -f infra/compose.dev.yaml --profile test config --quiet` passed. `git hash-object prometheus-grafana-course-bilingual.html` matched the tracked blob. |
 
 The Phase 4 acceptance gate is complete. Authenticated write tests used the isolated database. Hosted CI execution, other browser engines, manual assistive-technology testing and production load testing were outside this run.
+
+### Project review skills — 2026-11-23
+
+Installed the code, test and documentation review skills under `.agents/skills` from `amElnagdy/guard-skills`. The installer arguments were `--repo amElnagdy/guard-skills --ref ffa26036b7b5e77b20b5d679304a703b6fd1a43d --dest .agents/skills --path skills/clean-code-guard skills/test-guard skills/docs-guard`.
+
+For each installed directory, Codex's `quick_validate.py` passed and `diff -qr` against the pinned checkout found identical files (22 files in total). The upstream MIT notice was copied to `.agents/skills/guard-skills.LICENSE` and verified with `cmp`.
+
+## Azaly LMS v0.2.0
+
+Renamed the app to Azaly LMS in the localized shell, browser title, and About page. The navy and mint A mark in `app/icon.svg` serves as the header logo and browser icon. The localized footer reads version `0.2.0` from `package.json`. The wordmark and version number stay LTR in the Arabic interface. `AGENTS.md` documents the design skills, UI checks, version tagging, GitHub checks, and local stack rebuild.
+
+- Vercel Web Design Guidelines installer arguments `--repo vercel-labs/agent-skills --ref 5a37a6329fbad3666c3207392a6a7c0110e92efb --dest .agents/skills --path skills/web-design-guidelines`.
+- Anthropic Frontend Design installer arguments `--repo anthropics/skills --ref e4bb5d960d87126ff3b3a8af1a104b7db67560ba --dest .agents/skills --path skills/frontend-design`.
+- UI/UX Pro Max pinned commit `6ec2bb58334ca3014573c4cbd4834ee3a40afd9d` from `nextlevelbuilder/ui-ux-pro-max-skill`. Ran its `generatePlatformFiles('/staging', 'codex')` renderer with Node.js 24 in an offline container and copied the generated `ui-ux-pro-max` directory into `.agents/skills`.
+
+| Check | Observed result |
+| --- | --- |
+| Skill installation | `quick_validate.py` passed for all three. `cmp` verified both downloaded skill instructions and the generated Codex instructions. `diff -qr` matched the bundled UI/UX Pro Max data and scripts. The Vercel checklist matched its declared SHA-256. |
+| UI/UX Pro Max | `python3 -B .agents/skills/ui-ux-pro-max/scripts/search.py 'online course' --domain product --rtl` returned the e-learning profile with partial RTL support. A separate `--stack nextjs` search returned framework guidance. |
+| Development stack | `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml up -d --build --wait dev` rebuilt and started the web service with the existing PostgreSQL volume. Once Next.js was listening, `/api/health` and `/api/ready` returned HTTP 200. The running container reported package version `0.2.0`. |
+| Development browser | Chromium passed eight combinations of Arabic and English, widths of 375 and 1280 px, and light and dark themes. Each About page check verified the title, decoded logo, localized version and its LTR direction, visible keyboard focus, document direction, LTR code, and absence of horizontal overflow. |
+| Isolated acceptance | `bash infra/verify-phase4.sh` exited 0 in `academy-learning-03e6b8bdb333`. Frozen install, lint, type checking, production build, 16 unit tests, migration replay, permission checks, and authentication smoke passed. Chromium passed 10 tests, including branding and release version in both locales. Log at `test-results/azaly-0.2.0-acceptance.ZSl6G0.log`. |
+| Source preservation | `git diff --check` passed for project changes. The staged check flagged upstream whitespace in the pinned UI/UX Pro Max `scripts/design_system.py`, which was preserved verbatim. `git hash-object` matched `HEAD` for the original blueprint and course HTML. |

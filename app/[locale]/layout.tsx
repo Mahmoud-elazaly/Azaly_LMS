@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { version } from '../../package.json';
 import { direction, isLocale } from '@/i18n/locales';
 import { copy } from '@/i18n/messages';
 import { Navigation } from '../_components/navigation';
@@ -41,7 +43,10 @@ export default async function Layout({ children, params }: { children: ReactNode
       <a className="skip" href="#main">{t('skip')}</a>
       <header className="site-header">
         <div className="container header-inner">
-          <Link className="brand" href={`/${locale}`}><span className="mark" aria-hidden="true" dir="ltr">&gt;_</span>{t('brand')}</Link>
+          <Link className="brand" href={`/${locale}`}>
+            <Image src="/icon.svg" alt="" width={36} height={36} loading="eager" unoptimized />
+            <bdi lang="en" dir="ltr" translate="no">{t('brand')}</bdi>
+          </Link>
           <Navigation locale={locale} label={t('nav')} language={t('language')} links={[
             { path: '', label: t('home') },
             { path: '/courses', label: t('courses') },
@@ -54,7 +59,10 @@ export default async function Layout({ children, params }: { children: ReactNode
       <main className="container" id="main" tabIndex={-1}>{children}</main>
       <footer className="site-footer">
         <div className="container footer-inner">
-          <span>{t('brand')}</span>
+          <div className="footer-brand">
+            <bdi lang="en" dir="ltr" translate="no">{t('brand')}</bdi>
+            <small className="app-version">{t('version')} <bdi dir="ltr">{version}</bdi></small>
+          </div>
           <form action={saveTheme} aria-label={t('theme')} key={theme} className="theme-controls">
             {themes.map((option) => <button key={option} name="theme" value={option} aria-pressed={option === theme}>{t(option)}</button>)}
           </form>

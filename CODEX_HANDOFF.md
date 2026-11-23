@@ -1,4 +1,4 @@
-# Codex handoff | IT Engineering Academy
+# Codex handoff | Azaly LMS
 
 Last reviewed **2026-11-23**. Repository `/home/azaly/Azaly-LMS`. The handoff reflects the current workspace and the available WSL verification logs. Use [PLANS.md](PLANS.md) for formal phase status and historical evidence, [ROADMAP.md](ROADMAP.md) for gates, and [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md) for required checks. Read [AGENTS.md](AGENTS.md) and the [Hybrid Architecture MVP blueprint](IT_Engineering_Academy_Hybrid_Architecture_MVP.md) before changing scope.
 
@@ -10,7 +10,7 @@ Last reviewed **2026-11-23**. Repository `/home/azaly/Azaly-LMS`. The handoff re
 
 ## Project and architecture
 
-Azaly-LMS is a self-hosted bilingual LMS for infrastructure and DevOps training. It uses a Docker-first modular monolith. Next.js App Router serves the public catalog, authenticated accounts, the course builder, and the student player. The application modules live under `src/features/`. PostgreSQL is the system of record. Drizzle defines the tables and provides versioned migrations, while scoped SQL functions enforce sensitive database boundaries.
+Azaly LMS is a self-hosted bilingual LMS for infrastructure and DevOps training. It uses a Docker-first modular monolith. Next.js App Router serves the public catalog, authenticated accounts, the course builder, and the student player. The application modules live under `src/features/`. PostgreSQL is the system of record. Drizzle defines the tables and provides versioned migrations, while scoped SQL functions enforce sensitive database boundaries.
 
 The committed toolchain uses Node.js 24 in Docker, Corepack with pnpm 11.9.0, Next.js 16.4.5, React 19.2.8, TypeScript 5.9.3, Tailwind 4.3.3, next-intl 4.5.6, Better Auth 1.7.27, Drizzle ORM 0.45.2, drizzle-kit 0.31.7, and PostgreSQL 17. Read exact pins in [package.json](package.json) and [pnpm-lock.yaml](pnpm-lock.yaml). Runtime and test installations use the frozen lockfile. [pnpm-workspace.yaml](pnpm-workspace.yaml) explicitly allows selected dependency builds, including `@swc/core@1.16.22`. Keep pnpm's strict build policy.
 
@@ -94,6 +94,7 @@ Better Auth uses a seven-day session with a one-day refresh age and cookie cachi
 | Phase 3 `academy-builder-a5499c4fd4e3` | `/tmp/azaly-phase3-verification.log`. After lint fixes, lint/typecheck/build, Vitest 13/13, migration replay, rollback-only authoring permissions, HTTP smoke and Playwright 8/8 passed. |
 | Phase 4 `academy-learning-314356cfc6d8` | `/tmp/azaly-phase4-verification.log`. Reviewed frozen build layers, zero-warning ESLint, route type generation, TypeScript and production build. Vitest 16/16 across five files. Migrations passed twice. All three permission-test files completed with rollback. Database logins, repeated Owner bootstrap, TCP/grant preflight and standalone auth smoke passed. Playwright passed 7/7 identity/public, 1/1 authoring, 1/1 learning. |
 | Application review `academy-learning-bcc7a9652c90` | `/tmp/azaly-lms-review-final-20261123.log`. Exit 0, all 16 unit and 9 browser tests passed. See PLANS.md for commands and coverage. |
+| Azaly LMS v0.2.0 `academy-learning-03e6b8bdb333` | `test-results/azaly-0.2.0-acceptance.ZSl6G0.log`. Exit 0, all 16 unit and 10 browser tests passed. See PLANS.md for branding, version, and local rebuild checks. |
 
 The learner browser test covers protected redirects, refusal to enroll in a draft, Arabic enrollment and RTL/LTR rendering, bookmarking, progress persistence after reload, resume in a separate signed-in browser context, answer-key exclusion, rejection of a client-supplied score, grade history, and cross-student denial for reads, progress, and submissions.
 

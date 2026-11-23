@@ -1,7 +1,29 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { Pool } from 'pg';
+import { version } from '../../package.json';
 import { readDatabaseUrl } from '../../src/db/env';
+
+test('Azaly LMS branding and release version appear in both locales', async ({ page }) => {
+  for (const locale of ['ar', 'en']) {
+    await page.goto(`/${locale}/about`);
+    await expect(page).toHaveTitle('Azaly LMS');
+    const iconUrl = await page.locator('link[rel="icon"]').evaluate((icon: HTMLLinkElement) => icon.href);
+    await expect(await page.request.get(iconUrl)).toBeOK();
+
+    const brand = page.getByRole('link', { name: 'Azaly LMS', exact: true });
+    await expect(brand).toHaveAttribute('href', `/${locale}`);
+    await expect(brand.getByText('Azaly LMS')).toHaveAttribute('dir', 'ltr');
+    await expect.poll(() => brand.locator('img').evaluate(
+      (image) => image instanceof HTMLImageElement && image.naturalWidth > 0,
+    )).toBe(true);
+    await expect(page.getByRole('main').getByText('Azaly LMS', { exact: true })).toBeVisible();
+    const footer = page.getByRole('contentinfo');
+    const versionLabel = locale === 'ar' ? 'الإصدار' : 'Version';
+    await expect(footer.getByText('Azaly LMS', { exact: true })).toBeVisible();
+    await expect(footer.getByText(`${versionLabel} ${version}`, { exact: true })).toBeVisible();
+  }
+});
 
 test('English and Arabic navigation sets document direction and preserves LTR code', async ({ page }) => {
   const pageErrors: string[] = [];

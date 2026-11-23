@@ -1,4 +1,4 @@
-# IT Engineering Academy
+# Azaly LMS
 
 Self-hosted technical LMS foundation with an Arabic and English public portal. The catalog reads published PostgreSQL revisions. A clean database starts with an empty catalog. The original Prometheus and Grafana HTML is offline reference material.
 
@@ -42,6 +42,8 @@ dc up -d dev
 ```
 
 Open [Arabic](http://127.0.0.1:3000/ar) or [English](http://127.0.0.1:3000/en). If you configured a different `BETTER_AUTH_URL`, open that origin so sign-in requests pass the origin check. Changes in `app`, `src`, and `tests` are available to the container through bind mounts. Next.js reloads application source changes. Rebuild the development image after changing package manifests, the lockfile, or root configuration with `dc up -d --build dev`. Rebuild the migration image when migrations change. Stop development with `dc stop` and restart with `dc up -d postgres dev`.
+
+The footer shows the application version from `package.json` in both locales. A published release has a matching `v<version>` Git tag. Follow the build and release steps in [AGENTS.md](AGENTS.md#builds-and-releases).
 
 ## Quality checks
 
