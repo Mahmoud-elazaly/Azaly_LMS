@@ -53,6 +53,7 @@ async function bootstrap(client) {
 const databaseLogins = {
   provision: ['academy_auth', 'academy_auth_runtime'],
   'provision-authoring': ['academy_author', 'academy_authoring_runtime'],
+  'provision-real-lab': ['academy_real_lab_bridge', 'academy_real_lab_runtime'],
   'provision-learner': ['academy_learner', 'academy_learner_runtime'],
 };
 
@@ -64,7 +65,7 @@ async function provision(client, [login, group]) {
       AND pg_has_role(login.oid, $2::name, 'USAGE')
       AND NOT EXISTS (
         SELECT FROM pg_roles other
-        WHERE other.rolname IN ('academy_reader', 'academy_auth_runtime', 'academy_authoring_runtime', 'academy_learner_runtime')
+        WHERE other.rolname IN ('academy_reader', 'academy_auth_runtime', 'academy_authoring_runtime', 'academy_learner_runtime', 'academy_real_lab_runtime', 'academy_real_lab_definer')
           AND other.rolname <> $2 AND pg_has_role(login.oid, other.oid, 'MEMBER')
       ) AS permitted
       FROM pg_roles login WHERE rolname = $1`, [login, group],

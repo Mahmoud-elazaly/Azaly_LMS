@@ -234,3 +234,31 @@ Both commands can be rerun. The publisher requires an unchanged curated draft. I
 The published course appears at `/ar/courses/prometheus-grafana` and `/en/courses/prometheus-grafana`. Signed-in Students enroll from those pages. The practice files in the lessons use separate loopback ports on a learner-controlled environment, and the course keeps lab credentials local to that environment.
 
 Run `bash infra/verify.sh` for the full platform gate. The Phase 6 checks run the course journey in Chromium, confirm scoped PostgreSQL access, and start a separate practice Compose project to validate the published configuration and queries. The gate uses Docker, Bash, OpenSSL, Python 3, and curl on the host. See [acceptance criteria](ACCEPTANCE_TESTS.md).
+
+## Enable the NGINX Real Lab pilot
+
+Version 0.6.0 adds an opt-in pilot for learners with administrator-provisioned accounts. Apply migrations first. Provision `academy_real_lab_bridge` with the migration service and configure a private worker. The PostgreSQL login and controller secret belong to the bridge. Web services receive only `REAL_LAB_BRIDGE_URL`.
+
+For local development and acceptance, add the lab overlay and enable its local worker profile. This example assumes the Compose environment is already configured. Save the bridge password and controller secret in a protected operator environment if you need to recreate the services. Use the existing database login password on later runs. Set `LAB_CONTROL_SUBNET` to an unused private IPv4 subnet if the default `10.246.70.0/28` overlaps another network.
+
+```bash
+dc() { docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml -f infra/compose.lab.yaml --profile lab-local "$@"; }
+dc run --rm --build migrate
+bridge_password="$(openssl rand -hex 32)"
+printf '{"password":"%s"}\n' "$bridge_password" |
+  dc run --rm -T migrate node scripts/identity-admin.mjs provision-real-lab
+export REAL_LAB_DATABASE_URL="postgresql://academy_real_lab_bridge:$bridge_password@postgres:5432/academy"
+unset bridge_password
+export LAB_CONTROLLER_SECRET="$(openssl rand -hex 32)"
+export LAB_CONTROLLER_URL=http://lab-controller:8401
+export REAL_LAB_BRIDGE_URL=http://lab-bridge:8400
+docker build --target lab-sandbox -t academy-dev-lab-sandbox .
+export LAB_SANDBOX_IMAGE="$(docker image inspect academy-dev-lab-sandbox --format '{{.Id}}')"
+dc up -d --build --wait lab-controller lab-bridge dev
+```
+
+Open the NGINX lab through My learning or visit `/ar/real-lab` or `/en/real-lab` and sign in as a Student. Stop a lab when finished. Reset discards the workspace, and the next start creates a new instance. New starts can be denied while cleanup is in progress.
+
+For a deployment, build the `lab-sandbox` and `lab-controller` image targets on the dedicated Docker worker. Configure the controller with `LAB_SANDBOX_IMAGE` set to the approved local image ID, a deployment-specific `LAB_NAMESPACE`, and the shared `LAB_CONTROLLER_SECRET`. Mount the Docker socket only into the controller. Forward controller port 8401 through a private HTTPS ingress, restrict ingress to the bridge, and set the bridge's `LAB_CONTROLLER_URL` to that HTTPS origin. Run the bridge from `infra/compose.lab.yaml` without the `lab-local` profile. Enable the web workspace with `REAL_LAB_BRIDGE_URL=http://lab-bridge:8400`. Configure log collection for cleanup failure messages and investigate if repeated cleanup attempts fail.
+
+Run `bash infra/verify.sh` for the cumulative local and CI gate. See [Phase 7 acceptance](ACCEPTANCE_TESTS.md#phase-7-isolated-nginx-pilot).

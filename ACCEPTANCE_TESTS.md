@@ -12,7 +12,7 @@ For Phase 3 run `bash infra/verify-phase3.sh` on WSL. The isolated run checks mi
 
 Run `bash infra/verify-phase4.sh` on WSL for Phase 4. It rehearses migration replay, checks runtime role separation and server grading within a rollback-only SQL transaction, reruns prior Playwright suites, and tests bilingual enrollment, persisted progress and bookmarks, cross-device resume, grade history, answer key exclusion, and unauthenticated and cross-student denial.
 
-Run `bash infra/verify.sh` on WSL for the full platform gate used by CI. The Phase 6 entry point extends the Phase 5 runner, which creates a dedicated Compose project and database volume, uses container-local listeners, and prints service logs on failure. The runner applies and replays migrations through `0007`, runs all rollback-only permission tests, and exercises the standalone production build with the existing auth smoke test. It reruns identity, public, course-builder, and learner coverage before the Phase 5 Chromium suite.
+Run `bash infra/verify.sh` on WSL for the full platform gate used by CI. The cumulative runner extends the Phase 5 runner, which creates a dedicated Compose project and database volume, uses container-local listeners, and prints service logs on failure. The runner applies and replays migrations through `0008`, runs all rollback-only permission tests, and exercises the standalone production build with the existing auth smoke test. It reruns identity, public, course-builder, and learner coverage before the Phase 5 Chromium suite.
 
 - Author and import a bilingual bank question through the UI, publish the course, edit and archive the source, then grade the learner quiz using its original frozen key. Verify the learner response excludes the key and explanation.
 - Publish a bilingual Guided Lab with LTR command and starter text. Check mobile and desktop width, localized content, checkpoint persistence, optional learner evidence, and the explicit self-reported label.
@@ -30,3 +30,15 @@ Run `bash infra/verify.sh` from WSL. The gate retains the checks from Phases 1â€
 - Run the learner-facing Compose configuration in a disposable practice project. Check Prometheus and Alertmanager configuration, scrapes, Grafana data-source health, the static error ratio and p95, a recording rule, and the pending, firing, and recovery transitions.
 
 Observed results and reference hash checks are recorded in [PLANS.md](PLANS.md).
+
+## Phase 7 isolated NGINX pilot
+
+Run `bash infra/verify.sh` for the complete gate. Phase 7 adds these checks.
+
+- Apply the v0.5.0 migration history to an isolated database, add existing-course and identity fixtures, and apply and replay migration `0008`. Compare the course, user, credential, invitation, and session rows. Confirm direct registration still returns 404.
+- Prove PostgreSQL role separation, one-use workspace grants, start idempotency, per-learner concurrency denial, same-learner second-session denial, and rejection of a stale verification after expiry.
+- Launch the actual NGINX sandbox in Chromium. Deny another learner and another session access to configuration, preview, verification, stop, and reset. Deny caller verdicts and alternate destinations. Exercise the failing starter, apply the approved blue route, verify the live response, and confirm `SYSTEM_VERIFIED`. Send a delayed edit directly to the test worker after verification and confirm the verified route stays fixed.
+- Verify stop, reset, expiry, and authentication-session revocation. Inspect the sandbox's resource limits, UID, mounts, network namespace, and route isolation. Restart the controller with an orphan and confirm reconciliation removes it. Verify automatic expiry and removal with both control services stopped.
+- Check the lab in Arabic and English at 320px and 1280px in Light and Dark. Confirm mirrored editor and preview columns, accessible controls, focus, feedback, and LTR input and output.
+
+The observed gate results and the `academy-dev` upgrade are recorded in [PLANS.md](PLANS.md#phase-7--isolated-nginx-real-lab-pilot).
