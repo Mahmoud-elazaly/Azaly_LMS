@@ -41,8 +41,10 @@ export function EnrollButton({ slug, locale }: { slug: string; locale: Locale })
   </div>;
 }
 
-function ContentBlock({ block }: { block: PlayerBlock }) {
-  if (block.type === 'code') return <pre dir="ltr"><code>{block.text}</code></pre>;
+function ContentBlock({ block, codeLabel }: { block: PlayerBlock; codeLabel: string }) {
+  if (block.type === 'code') {
+    return <pre dir="ltr" translate="no" tabIndex={0} role="group" aria-label={codeLabel}><code>{block.text}</code></pre>;
+  }
   if (block.type === 'heading') return <h3>{block.text}</h3>;
   if (block.type === 'callout') return <aside className="notice">{block.text}</aside>;
   return <p>{block.text}</p>;
@@ -128,32 +130,39 @@ export function CoursePlayer({ locale, data }: { locale: Locale; data: PlayerDat
     }
   }
 
-  return <div className="builder-fields">
+  return <div className="builder-fields course-player">
     {data.content ? <>
       <h1>{data.content.title}</h1>
       <label>{text.progress}<progress max={100} value={progressPercent(completed, lessons.length)} /></label>
       <p>{text.completed} <bdi>{completed}/{lessons.length}</bdi></p>
-      {data.content.modules.map((courseModule) => <section key={courseModule.id}>
-        <h2>{courseModule.title}</h2>
-        <div className="builder-controls">{courseModule.lessons.map((item) => <button key={item.id} className="identity-button"
-          aria-pressed={item.id === active} disabled={pending} onClick={() => void update('resume', item.id)}>{item.title}</button>)}</div>
-      </section>)}
-      {bookmarked.length > 0 && <section>
-        <h2>{text.bookmarks}</h2>
-        <div className="builder-controls">{bookmarked.map((item) => <button key={item.id} className="identity-button"
-          disabled={pending} onClick={() => void update('resume', item.id)}>{item.title}</button>)}</div>
-      </section>}
-      {lesson && <article className="notice builder-fields">
-        <h2>{lesson.title}</h2>
-        {lesson.blocks.map((block) => <ContentBlock key={block.id} block={block} />)}
-        <div className="builder-controls">
-          <button className="identity-button" disabled={pending || current?.completed}
-            onClick={() => void update('complete', lesson.id)}>{current?.completed ? text.done : text.complete}</button>
-          <button className="identity-button" disabled={pending} onClick={() => void update('bookmark', lesson.id, !current?.bookmarked)}>
-            {current?.bookmarked ? text.removeBookmark : text.addBookmark}
-          </button>
-        </div>
-      </article>}
+      <div className="course-lesson-layout">
+        <nav className="builder-fields" aria-label={text.outline}>
+          {lesson && <a href="#current-lesson">{text.jumpToLesson}</a>}
+          {data.content.modules.map((courseModule) => <section key={courseModule.id}>
+            <h2>{courseModule.title}</h2>
+            <div className="builder-controls">{courseModule.lessons.map((item) => <button type="button" key={item.id}
+              className="identity-button" aria-pressed={item.id === active} disabled={pending}
+              onClick={() => void update('resume', item.id)}>{item.title}</button>)}</div>
+          </section>)}
+          {bookmarked.length > 0 && <section>
+            <h2>{text.bookmarks}</h2>
+            <div className="builder-controls">{bookmarked.map((item) => <button type="button" key={item.id}
+              className="identity-button" disabled={pending} onClick={() => void update('resume', item.id)}>{item.title}</button>)}</div>
+          </section>}
+        </nav>
+        {lesson && <article id="current-lesson" tabIndex={-1} className="notice builder-fields">
+          <h2>{lesson.title}</h2>
+          {lesson.blocks.map((block) => <ContentBlock key={block.id} block={block} codeLabel={text.codeExample} />)}
+          <div className="builder-controls">
+            <button type="button" className="identity-button" disabled={pending || current?.completed}
+              onClick={() => void update('complete', lesson.id)}>{current?.completed ? text.done : text.complete}</button>
+            <button type="button" className="identity-button" disabled={pending}
+              onClick={() => void update('bookmark', lesson.id, !current?.bookmarked)}>
+              {current?.bookmarked ? text.removeBookmark : text.addBookmark}
+            </button>
+          </div>
+        </article>}
+      </div>
       {failed && <p role="alert">{text.error}</p>}
       <GuidedLabs labs={data.guidedLabs} locale={locale} enrollmentId={data.id} />
       {data.quizzes.length > 0 && <section className="builder-fields">

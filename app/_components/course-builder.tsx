@@ -167,7 +167,7 @@ function QuizEditor({ quiz, language, text, locale, bank, onChange }: {
       </div>;
     })}
     {bank.length === 0 ? <p>{bankText.noImport}</p> : <div className="builder-fields">
-      <label>{bankText.choose}<select value={selectedBankId} onChange={(event) => setSelectedBankId(event.target.value)}>
+      <label>{bankText.choose}<select dir={direction(language)} value={selectedBankId} onChange={(event) => setSelectedBankId(event.target.value)}>
         <option value="">—</option>
         {bank.map((item) => <option value={item.id} key={item.id}>{item.translations[language].prompt}</option>)}
       </select></label>

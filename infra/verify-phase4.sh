@@ -6,6 +6,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
   set -euo pipefail
   prefix=academy-learning
   if [[ "${PHASE5_TEST:-}" == 1 ]]; then prefix=academy-phase5; fi
+  if [[ "${PHASE6_TEST:-}" == 1 ]]; then prefix=academy-phase6; fi
   project="$prefix-$(openssl rand -hex 6)"
   container="$project-web"
   dc() { docker compose -p "$project" -f compose.yaml -f infra/compose.dev.yaml "$@"; }
@@ -104,6 +105,14 @@ JS
     pnpm exec playwright test tests/e2e/course-builder.spec.ts
     pnpm exec playwright test tests/e2e/learning.spec.ts
     if [ "${PHASE5_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase5.spec.ts; fi
+    if [ "${PHASE6_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase6.spec.ts; fi
   '
   docker rm "$project-browser" >/dev/null
+  if [[ "${PHASE6_TEST:-}" == 1 ]]; then
+    dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase6-permissions.sql
+    dc run --rm --no-deps -T migrate node --input-type=module -e '
+      import { labFiles } from "./src/features/curriculum/prometheus-grafana/lab-kit.ts";
+      console.log(JSON.stringify(labFiles));
+    ' | bash infra/verify-phase6-snippets.sh "$project-practice"
+  fi
 )

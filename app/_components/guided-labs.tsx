@@ -28,11 +28,11 @@ function LabInstructions({ lab, locale }: { lab: GuidedLab; locale: Locale }) {
     {(lab.commands || lab.starter) && <p>{text.informational}</p>}
     {lab.commands && <div>
       <h4>{text.commands}</h4>
-      <pre className="guided-code" dir="ltr" tabIndex={0} aria-label={text.commands}><code>{lab.commands}</code></pre>
+      <pre className="guided-code" dir="ltr" translate="no" tabIndex={0} role="group" aria-label={text.commands}><code>{lab.commands}</code></pre>
     </div>}
     {lab.starter && <div>
       <h4>{text.starter}</h4>
-      <pre className="guided-code" dir="ltr" tabIndex={0} aria-label={text.starter}><code>{lab.starter}</code></pre>
+      <pre className="guided-code" dir="ltr" translate="no" tabIndex={0} role="group" aria-label={text.starter}><code>{lab.starter}</code></pre>
     </div>}
   </>;
 }

@@ -211,3 +211,26 @@ unset learner_db_password
 Set `LEARNER_DATABASE_URL` in the ignored `.env` to `postgresql://academy_learner:YOUR_LEARNER_DB_PASSWORD@postgres:5432/academy` and recreate the web service to load it. Students enroll from published course details and resume from My learning. Enrollments stay pinned to the revision selected at enrollment. Withdrawal prevents new enrollments while existing learners can continue on their original published revision. Catalog entries created before structured snapshots must be republished with structured content before they can accept enrollments.
 
 Use the existing course builder to add optional multiple-choice quizzes. Author each published locale independently and keep the choices in equivalent order across languages because the correct index is shared. Learners see their own grades. Correct answers are kept in the private publication snapshot.
+
+## Publish the Prometheus and Grafana course
+
+Version 0.5.0 includes the curated Arabic and English course. The deployment operator imports it through the migration service after migrations and Owner bootstrap. Select the intended Compose project first. For the development project established above, run:
+
+```sh
+dc run --rm --build migrate
+dc run --rm migrate pnpm db:seed:prometheus-grafana draft
+```
+
+Review the private draft in the Course builder. It belongs to the only active Owner by default. Pass `--author <email>` to both commands to assign it to a specific active Owner, Admin, or Instructor. An Instructor can review attempts for the course they own.
+
+Publish the reviewed draft in the builder or publish the exact curated revision with:
+
+```sh
+dc run --rm migrate pnpm db:seed:prometheus-grafana publish
+```
+
+Both commands can be rerun. The publisher requires an unchanged curated draft. If an author has edited the draft, review and publish that revision in the builder. An existing course with the same slug is preserved, and the import stops with a conflict. Once the curated revision has been recorded, seeding leaves later edits and publication decisions to staff.
+
+The published course appears at `/ar/courses/prometheus-grafana` and `/en/courses/prometheus-grafana`. Signed-in Students enroll from those pages. The practice files in the lessons use separate loopback ports on a learner-controlled environment, and the course keeps lab credentials local to that environment.
+
+Run `bash infra/verify.sh` for the full platform gate. The Phase 6 checks run the course journey in Chromium, confirm scoped PostgreSQL access, and start a separate practice Compose project to validate the published configuration and queries. The gate uses Docker, Bash, OpenSSL, Python 3, and curl on the host. See [acceptance criteria](ACCEPTANCE_TESTS.md).
