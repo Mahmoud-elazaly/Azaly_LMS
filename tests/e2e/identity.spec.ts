@@ -3,7 +3,7 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { Pool } from 'pg';
 import { readDatabaseUrl } from '../../src/db/env';
 import { identityCopy } from '../../src/features/identity/copy';
-import { createTestLearner } from './test-accounts';
+import { capturedInvitation, createTestLearner } from './test-accounts';
 
 const origin = 'http://127.0.0.1:3100';
 const ownerPassword = process.env.AUTH_TEST_OWNER_PASSWORD;
@@ -14,17 +14,6 @@ function post(request: APIRequestContext, path: string, data: object) {
 
 function signIn(request: APIRequestContext, email: string, password: string) {
   return post(request, '/api/auth/sign-in/email', { email, password });
-}
-
-async function invitationFor(recipient: string) {
-  const message = await fetch(`http://127.0.0.1:3101/messages?recipient=${encodeURIComponent(recipient)}`, {
-    headers: { Authorization: 'Bearer isolated-playwright-mail' },
-  });
-  expect(message.status).toBe(200);
-  const { text }: { text: string } = await message.json();
-  const url = text.split('\n').find((line) => line.startsWith(origin));
-  if (!url) throw new Error('Invitation email has no activation link');
-  return new URL(url);
 }
 
 async function checkLayout(page: Page, route: string, heading: string) {
@@ -128,7 +117,7 @@ test.describe('identity on a dedicated database', () => {
       await expect(admin.getByText('Invitation accepted by the email service.')).toBeVisible();
       expect((await post(admin.request, '/api/admin/users', { ...unauthorized, email: email.toUpperCase() })).status()).toBe(409);
 
-      const activation = await invitationFor(email);
+      const activation = await capturedInvitation(email);
       const token = activation.hash.slice(1);
       expect(activation.pathname).toBe('/ar/activate');
       const t = identityCopy('ar');
@@ -172,7 +161,7 @@ test.describe('identity on a dedicated database', () => {
       expect((await owner.post('/api/admin/users', { data: invitation, headers: { Origin: 'https://untrusted.example.test' } })).status())
         .toBe(403);
       expect((await post(owner, '/api/admin/users', invitation)).status()).toBe(200);
-      const original = (await invitationFor(email)).hash.slice(1);
+      const original = (await capturedInvitation(email)).hash.slice(1);
       const directory = await owner.get(`/api/admin/users?q=${encodeURIComponent(email)}&status=invited`);
       const { users: [{ id }] } = await directory.json();
       expect((await post(owner, '/api/admin/users', { operation: 'edit', id, name: 'Edited invitation', role: 'STUDENT' })).status()).toBe(200);
@@ -181,7 +170,7 @@ test.describe('identity on a dedicated database', () => {
       await pool.query("UPDATE identity.invitation SET expires_at = now() - interval '1 minute' WHERE id = $1", [id]);
       expect((await post(owner, '/api/auth/activate', { token: original, password })).status()).toBe(400);
       expect((await post(owner, '/api/admin/users', { operation: 'resend', id })).status()).toBe(200);
-      const rotated = (await invitationFor(email)).hash.slice(1);
+      const rotated = (await capturedInvitation(email)).hash.slice(1);
       expect(rotated).not.toBe(original);
       expect((await post(owner, '/api/auth/activate', { token: original, password })).status()).toBe(400);
       expect((await post(owner, '/api/admin/users', { operation: 'revoke', id })).status()).toBe(200);

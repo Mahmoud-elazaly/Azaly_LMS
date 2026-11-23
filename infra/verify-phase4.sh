@@ -4,7 +4,9 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
 (
   set -euo pipefail
-  project="academy-learning-$(openssl rand -hex 6)"
+  prefix=academy-learning
+  if [[ "${PHASE5_TEST:-}" == 1 ]]; then prefix=academy-phase5; fi
+  project="$prefix-$(openssl rand -hex 6)"
   container="$project-web"
   dc() { docker compose -p "$project" -f compose.yaml -f infra/compose.dev.yaml "$@"; }
   cleanup() {
@@ -16,7 +18,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
     fi
     docker rm -f "$container" >/dev/null 2>&1 || true
     docker rm -f "$project-browser" >/dev/null 2>&1 || true
-    dc stop || true
+    if [[ "${PHASE5_TEST:-}" == 1 ]]; then dc down || true; else dc stop || true; fi
     return "$status"
   }
   trap cleanup EXIT
@@ -53,6 +55,9 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
   printf '{"name":"Test Owner","email":"owner@example.test","password":"%s"}\n' "$AUTH_TEST_OWNER_PASSWORD" |
     dc run --rm -T migrate pnpm auth:bootstrap-owner
   dc run --rm -T migrate pnpm auth:bootstrap-owner </dev/null
+  if [[ "${PHASE5_TEST:-}" == 1 ]]; then
+    dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase5-permissions.sql
+  fi
   dc run --rm --no-deps -T dev node --input-type=module - <<'JS'
 import pg from 'pg';
 const client = new pg.Client({ connectionString: process.env.AUTH_DATABASE_URL, connectionTimeoutMillis: 2500 });
@@ -98,6 +103,7 @@ JS
     pnpm exec playwright test tests/e2e/identity.spec.ts tests/e2e/public.spec.ts
     pnpm exec playwright test tests/e2e/course-builder.spec.ts
     pnpm exec playwright test tests/e2e/learning.spec.ts
+    if [ "${PHASE5_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase5.spec.ts; fi
   '
   docker rm "$project-browser" >/dev/null
 )

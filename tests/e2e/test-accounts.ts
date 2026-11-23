@@ -23,3 +23,14 @@ export async function createTestLearner(name = 'Test learner') {
     await pool.end();
   }
 }
+
+export async function capturedInvitation(email: string) {
+  const response = await fetch(`http://127.0.0.1:3101/messages?recipient=${encodeURIComponent(email)}`, {
+    headers: { Authorization: 'Bearer isolated-playwright-mail' },
+  });
+  if (!response.ok) throw new Error(`Invitation capture returned HTTP ${response.status}`);
+  const { text }: { text: string } = await response.json();
+  const link = text.split('\n').find((line) => line.startsWith('http://127.0.0.1:3100/'));
+  if (!link) throw new Error('Captured invitation has no local activation link');
+  return new URL(link);
+}

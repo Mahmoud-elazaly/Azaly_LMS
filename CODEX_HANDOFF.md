@@ -4,8 +4,9 @@ Last reviewed **2026-11-23**. Repository `/home/azaly/Azaly-LMS`. The handoff re
 
 ## Where to resume
 
-- **Phases 0–4 are complete.** Release `v0.2.0` includes the Phase 4 learning flow. `main` tracks `origin/main`. See PLANS.md for the isolation results and the version 0.3.0 account changes.
-- **Phase 5 has not started.** The user has been directing one phase at a time. Get explicit direction before starting the next phase. The course-level multiple-choice quizzes requested in Phase 4 are implemented. The larger assessment question bank, Guided Labs, and Real Labs remain future work.
+- **Phases 0–4 are complete.** The published `v0.3.0` baseline is commit `4ab5e4e` on `origin/main`.
+- **Phase 5 is implemented and verified on WSL.** It adds a reusable question bank and Guided Labs with separate self-reported and instructor-reviewed records. The changes are in the working tree. See PLANS.md for the successful isolated gate and file inventory.
+- **The `v0.4.0` release is prepared on `feat/phase5-release`.** The unified WSL gate passed, and `academy-dev` runs `0.4.0` with migration `0007` applied. The release is uncommitted. See [release verification](PLANS.md#azaly-lms-v040-release-preparation).
 
 ## Project and architecture
 
@@ -27,8 +28,9 @@ Guided Labs are intended for learner-managed infrastructure with explicit comple
 | 1 | Closed. Docker-first foundation, bilingual public Home, About and catalog, published course detail pages, theming, PostgreSQL migrations, liveness/readiness, quality tooling, and CI. |
 | 2 | Closed. Email/password sign-in/sign-out, sanitized session endpoint, account and role dashboards, Owner bootstrap, suspension/restoration and audited role changes. Version 0.3.0 replaces registration with administrator invitations. |
 | 3 | Closed and pushed. Browser authoring in both languages, structured paragraph/heading/code/callout blocks, module/lesson/block ordering, protected preview, draft saves, publishing, republishing, withdrawal and archival. Verified two unrelated courses created and published entirely through the browser. |
-| 4 | Implemented and WSL suite passed. Bilingual enrollment from published course details, My learning, course player, completion, bookmarks and last-lesson resume across sessions/devices. Optional localized course quizzes in the builder, server-side grading, and private grade history. Verification is recorded in PLANS.md. Changes await commit. |
-| 5–8 | Future. Phase 5 expands assessments and adds Guided Labs. Phase 6 delivers a curated Prometheus/Grafana learning path. Phase 7 pilots an isolated NGINX Real Lab. Phase 8 covers restore drills, monitoring, capacity and security hardening before external enrollment. |
+| 4 | Closed. Bilingual enrollment, My learning, course player, completion, bookmarks, resume, localized quizzes, server-side grading, and private grade history. |
+| 5 | WSL gate passed. Scoped question bank, versioned course copies, Guided Lab authoring and attempts, and an instructor review queue. Gate evidence is in PLANS.md. |
+| 6–8 | Planned. Phase 6 delivers a curated Prometheus/Grafana learning path. Phase 7 pilots an isolated NGINX Real Lab. Phase 8 covers restore drills, monitoring, capacity and security hardening before external enrollment. |
 
 ### Role and publishing decisions
 
@@ -49,6 +51,7 @@ Guided Labs are intended for learner-managed infrastructure with explicit comple
 | `app/api/auth/[...all]/route.ts`, `app/api/admin/users/route.ts`, `app/api/instructor/route.ts` | Allowlisted auth endpoints, administrative user management, and Instructor-only identity endpoint. Better Auth's generic admin endpoints remain closed. |
 | `app/[locale]/builder/page.tsx`, `app/_components/course-builder.tsx`, `app/api/authoring/route.ts`, `src/features/authoring/` | Draft editor and safe preview, localized quiz editing, validation, publish policy and authoring service. |
 | `app/[locale]/learning/page.tsx`, `app/_components/learning.tsx`, `app/api/learning/route.ts`, `src/features/learning/` | Enrollment, localized player and grade history, lesson operations, ownership and quiz submission contracts. |
+| `app/[locale]/question-bank/`, `app/[locale]/guided-reviews/`, `app/api/question-bank/`, `app/api/guided-reviews/`, `app/api/learning/guided-labs/`, `src/features/{assessment,guided}/` | Private reusable questions, Guided Lab authoring and learner progress, and scoped instructor review. |
 | `src/db/{schema,identity-schema,authoring-schema,learning-schema}.ts`, `src/db/env.ts`, `drizzle.config.ts`, `src/db/migrations/` | Table declarations, redacted URL validation, migration configuration, additive SQL, snapshots and migration journal. |
 | `scripts/identity-admin.mjs`, `infra/postgres/10-catalog-reader.sql`, `.env.example` | Idempotent Owner initialization, separate database-login provisioning, fresh-volume catalog reader initialization, and credential placeholders. |
 | `Dockerfile`, `compose.yaml`, `infra/compose.dev.yaml`, `.dockerignore`, `next.config.ts` | Build targets, private DB network, isolated test browser, bind mounts, image context, standalone output, and HTTP headers. |
@@ -70,6 +73,7 @@ Applied migration sequence and intent:
 - `0004_authoring.sql` adds draft/snapshot/event tables, course order and withdrawal, existing-course draft backfill, and the restricted author command.
 - `0005_learning.sql` adds learner tables, session/ownership-scoped commands and database grading.
 - `0006_closed_registration.sql` closes direct runtime account creation and adds invitation, audit and account rate-limit storage. Keep applied migrations immutable. Add new migrations, journal entries, and matching Drizzle snapshots for changes to persistent schema.
+- `0007_assessments_guided_labs.sql` adds reusable bank questions, Guided Lab attempts and immutable reviews, and validation of Guided Lab templates in private draft and snapshot documents.
 
 ### Runtime credentials and authorization
 
@@ -95,6 +99,7 @@ Better Auth uses a seven-day session with a one-day refresh age and cookie cachi
 | Phase 4 `academy-learning-314356cfc6d8` | `/tmp/azaly-phase4-verification.log`. Reviewed frozen build layers, zero-warning ESLint, route type generation, TypeScript and production build. Vitest 16/16 across five files. Migrations passed twice. All three permission-test files completed with rollback. Database logins, repeated Owner bootstrap, TCP/grant preflight and standalone auth smoke passed. Playwright passed 7/7 identity/public, 1/1 authoring, 1/1 learning. |
 | Application review `academy-learning-bcc7a9652c90` | `/tmp/azaly-lms-review-final-20261123.log`. Exit 0, all 16 unit and 9 browser tests passed. See PLANS.md for commands and coverage. |
 | Azaly LMS v0.2.0 `academy-learning-03e6b8bdb333` | `test-results/azaly-0.2.0-acceptance.ZSl6G0.log`. Exit 0, all 16 unit and 10 browser tests passed. See PLANS.md for branding, version, and local rebuild checks. |
+| Phase 5 `academy-phase5-40ebe7dde078` | `test-results/azaly-phase5.P6NpgD.log`. Exit 0, 28 unit tests and 15 browser tests passed. SQL permissions and migration replay through `0007` passed. See PLANS.md for the full gate. |
 
 The learner browser test covers protected redirects, refusal to enroll in a draft, Arabic enrollment and RTL/LTR rendering, bookmarking, progress persistence after reload, resume in a separate signed-in browser context, answer-key exclusion, rejection of a client-supplied score, grade history, and cross-student denial for reads, progress, and submissions.
 
@@ -104,11 +109,11 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
 ## Known limitations and open items
 
-- GitHub CI invokes the isolated Phase 4 runner for privileged identity, authoring, and learner acceptance.
+- GitHub CI runs `bash infra/verify.sh` for the full platform gate, including Phase 5 assessment and Guided Lab coverage.
 - `/api/health` signals process liveness. `/api/ready` currently checks the catalog pool and catalog schema only. A healthy response alone does not validate auth, authoring, or learner credentials.
 - Better Auth sign-in limits are per process. Invitation activation and management limits use PostgreSQL. Terminate TLS through a trusted proxy that overwrites `X-Academy-Client-IP` with the verified client IP and keeps the web port private. Requests without a usable address share the loopback bucket. See [invitation setup](README.md#provision-accounts-by-invitation) for mail configuration.
 - Switching language preserves the selected draft or enrollment and translates validated sign-in return paths.
-- Course-level quizzes are in place. The reusable question bank, private media/file delivery, Guided Lab evidence flow, Real Lab controller, and production restore/monitoring work are still ahead. Assessment authors must maintain equivalent answer ordering across languages. Enrollment upgrades are not automatic.
+- Assessment authors must maintain equivalent answer ordering across languages. Enrollment upgrades are deliberate. Private media delivery, Phase 6 content curation, the Real Lab controller, and production restore and monitoring remain roadmap items.
 
 ## Exact next steps
 
@@ -117,7 +122,7 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
    ```bash
    cd /home/azaly/Azaly-LMS
    set -o pipefail
-   bash infra/verify-phase4.sh 2>&1 | tee /tmp/azaly-phase4-verification.log
+   bash infra/verify.sh 2>&1 | tee /tmp/azaly-lms-verification.log
    ```
 
 2. **Review the checkout before any commit.** On the WSL host:
@@ -133,7 +138,7 @@ The Docker browser stage now inherits `dependencies` and installs Chromium and O
 
    Review the actual diff and new files. Stage and commit only with authorization. If the managed Codex sandbox reports a read-only `.git` directory or denied Docker socket, use the WSL host session. Keep existing volumes and project names. Avoid volume-removal flags.
 3. **For a separately authorized deployment**, follow [README.md](README.md#phase-4-learner-experience-on-wsl) to migrate and provision the learner login against the intended existing project. Update the environment and recreate its web container. Verify both HTTP probes and exercise a real authenticated learner flow. Do not reuse test passwords or restore test fixtures into an existing deployment.
-4. **Wait for approval to start Phase 5.** When approved, read the blueprint and lab threat model together. Extend the existing versioned assessment model with the dedicated question bank and explicit provenance as needed. Start with the Guided Lab contract and acceptance evidence. Keep the Real Lab plane outside the web application and reserve the NGINX execution pilot for Phase 7.
+4. **Review the Phase 5 gate evidence in PLANS.md.** Review the author scope, submission and review constraints, and published snapshot behavior before a release. Phase 6 content curation needs its own scope approval. The NGINX execution pilot remains in Phase 7.
 
 ## Keeping this handoff current
 

@@ -6,6 +6,7 @@ import { learningCopy } from '@/features/learning/copy';
 import { progressPercent, type LearnerInput } from '@/features/learning/policy';
 import type { Grade, PlayerBlock, PlayerData, Quiz } from '@/features/learning/service';
 import type { Locale } from '@/i18n/locales';
+import { GuidedLabs } from './guided-labs';
 
 async function send(input: LearnerInput): Promise<Response> {
   const response = await fetch('/api/learning', {
@@ -154,6 +155,7 @@ export function CoursePlayer({ locale, data }: { locale: Locale; data: PlayerDat
         </div>
       </article>}
       {failed && <p role="alert">{text.error}</p>}
+      <GuidedLabs labs={data.guidedLabs} locale={locale} enrollmentId={data.id} />
       {data.quizzes.length > 0 && <section className="builder-fields">
         <h2>{text.quizzes}</h2>
         {data.quizzes.map((quiz) => <QuizForm key={quiz.id} quiz={quiz} enrollment={data.id} locale={locale}

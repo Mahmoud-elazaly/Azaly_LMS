@@ -284,3 +284,44 @@ The centered sign-in, localized activation, and protected user directory share N
 | Source preservation | `git diff --check` passed. The original blueprint and course HTML Git hashes match `HEAD`. SHA-256 of the supplied sign-in mockup remains `6d8193c1eb8fea093ce1059dcb38133f61d321146733b044a5034794ccacd48e`. |
 
 The local `.env` has no invitation mail credentials. The isolated browser runner uses a loopback mail capture service. Production setup requires a verified sender, API key, reachable mail endpoint, and the canonical HTTPS origin. See the [invitation setup](README.md#provision-accounts-by-invitation).
+
+## Phase 5 — Reusable assessments and Guided Labs
+
+Scope approved from the `v0.3.0` baseline at `4ab5e4e`. Migration `0007_assessments_guided_labs` adds an author-scoped question bank, Guided Lab attempts, and immutable review records. The course builder copies reusable questions into drafts and freezes the copies and bilingual Guided Lab templates on publication. Learners work against their pinned revision. A submitted attempt keeps the original self-reported evidence and checkpoints alongside the instructor’s separate decision. Application policies and scoped PostgreSQL functions enforce ownership and provenance.
+
+| Check | Observed result |
+| --- | --- |
+| Design and review | Ran UI/UX Pro Max product search with `--rtl` and Next.js stack search with `--stack nextjs`. Used the existing builder and player styles for the new views. Reviewed labels, keyboard controls, form feedback, reading direction, and code scrolling against the bundled Web Interface Guidelines. |
+| Initial migration and build | Applied SQL migrations `0000` through `0007` on a fresh PostgreSQL 17 container. The first complete gate attempt passed lint, types, unit tests, builds, and migration replay. The new rollback-only SQL test exposed a JSONB operator-precedence error in bank validation. Added parentheses and verified the Phase 5 permissions test on a fresh isolated PostgreSQL instance. Initial log at `test-results/azaly-phase5.QaD1hA.log`. |
+| Upgrade and metadata | A separate isolated upgrade from `0006` to `0007` retained seeded users, credential hashes, and sessions and kept direct registration denied. `pnpm db:generate` with the new Drizzle snapshot reported no schema changes. |
+| Browser retry | The second isolated run passed 28 unit tests, all rollback-only permission tests, HTTP auth smoke, and all 14 prior browser tests. The new journey exposed an unstable control label after editing a Guided Lab textarea. Associated each textarea with an explicit label and restarted the gate. Log at `test-results/azaly-phase5.NVM0lV.log`. |
+| Final WSL gate | `bash infra/verify-phase5.sh` exited 0 in `academy-phase5-40ebe7dde078`. The frozen dependency build, zero-warning ESLint, type checking, production builds, 28 Vitest tests, migration replay through `0007`, four rollback-only SQL permission suites, closed-registration and restart smoke tests, and 15 Chromium tests passed. Log at `test-results/azaly-phase5.P6NpgD.log`. |
+| Phase 5 browser coverage | Verified the question bank, builder, review queue, and player in Arabic and English, Light and Dark, at 320px and 1280px. The player also passed at 375px. Verified keyboard focus on scrollable LTR code, a bilingual quiz and lab publication, grading with the original published key after a bank edit and archive, saved checkpoints and evidence across reload and sign-in, and the separate instructor review. Direct HTTP checks rejected guest access, cross-scope requests and forged provenance. |
+
+**Phase 5 WSL verification gate passed.** The runner used a new Compose project and volume. The Phase 5 changes are in the working tree. The released `v0.3.0` baseline and existing development volume remain outside this run.
+
+### Phase 5 changed files
+
+| Area | Files |
+| --- | --- |
+| Localized routes and styles | `app/[locale]/builder/page.tsx`, `app/[locale]/guided-reviews/page.tsx`, `app/[locale]/question-bank/page.tsx`, `app/[locale]/styles.css` |
+| Shared UI | `app/_components/content-request.ts`, `app/_components/course-builder.tsx`, `app/_components/guided-lab-authoring.tsx`, `app/_components/guided-labs.tsx`, `app/_components/learning.tsx`, `app/_components/ordered-fields.tsx`, `app/_components/question-bank.tsx` |
+| HTTP | `app/api/content-response.ts`, `app/api/guided-reviews/route.ts`, `app/api/learning/guided-labs/route.ts`, `app/api/question-bank/route.ts` |
+| Domain | `src/features/assessment/copy.ts`, `src/features/assessment/policy.ts`, `src/features/assessment/service.ts`, `src/features/authoring/policy.ts`, `src/features/authoring/service.ts`, `src/features/guided/copy.ts`, `src/features/guided/policy.ts`, `src/features/guided/service.ts`, `src/features/identity/return-path.ts`, `src/features/learning/service.ts` |
+| Database | `src/db/authoring-schema.ts`, `src/db/authoring.ts`, `src/db/learning-schema.ts`, `src/db/learning.ts`, `src/db/migrations/0007_assessments_guided_labs.sql`, `src/db/migrations/meta/0007_snapshot.json`, `src/db/migrations/meta/_journal.json` |
+| Verification | `infra/compose.dev.yaml`, `infra/verify-phase4.sh`, `infra/verify-phase5.sh`, `tests/e2e/identity.spec.ts`, `tests/e2e/phase5.spec.ts`, `tests/e2e/test-accounts.ts`, `tests/integration/phase5-permissions.sql`, `tests/unit/phase5.test.ts` |
+| Documentation | `ACCEPTANCE_TESTS.md`, `ARCHITECTURE.md`, `CODEX_HANDOFF.md`, `DATA_MODEL.md`, `PLANS.md`, `SECURITY_THREAT_MODEL.md` |
+
+### Azaly LMS v0.4.0 release preparation
+
+Set `package.json` to `0.4.0`. The localized footer and its Playwright check both read the manifest. The version search found no tests or documentation that treated `0.3.0` as the current footer version. CI and local acceptance now use `bash infra/verify.sh`, which delegates to the Phase 5 runner. The Phase 2–5 runner hashes match the checkout before release preparation.
+
+| Command or check | Observed result |
+| --- | --- |
+| `bash infra/verify.sh` | Exited 0 on WSL2 in `academy-phase5-847bb4b870b2`. The standalone image reported `0.4.0`. Frozen install, lint, type checking, production builds, 28 Vitest tests, migration application and replay, four rollback-only SQL permission suites, authentication smoke and restart persistence, and 15 Chromium tests passed. Chromium verified the release footer in both locales and ran the complete Phase 5 journey. Log at `test-results/azaly-0.4.0-verify.uPrJ0u.log`. |
+| `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml run --rm --build migrate` | Exited 0. Drizzle's migration count increased from 7 to 8, and the database recorded the SHA-256 of `0007_assessments_guided_labs.sql` exactly once. |
+| `docker compose -p academy-dev -f compose.yaml -f infra/compose.dev.yaml up -d --build --wait dev` | Exited 0. The rebuilt service reported package version `0.4.0`. The original PostgreSQL container and its `academy-dev_postgres-data` volume were retained. Both Compose commands are in `test-results/azaly-0.4.0-dev.MDY82c.log`. |
+| HTTP probes and localized home pages | `/api/health` returned HTTP 200 with `{"status":"ok"}`. `/api/ready` returned HTTP 200 with `{"status":"ready"}`. `/ar` and `/en` returned HTTP 200 and rendered the localized footer with `0.4.0` in LTR text. The Arabic page was RTL and the English page was LTR. |
+| `git diff --check`, Bash syntax, and CI YAML checks | Passed. The workflow's pre-migration HTTP 503 check and Compose restart persistence check match the previous workflow. |
+
+Release changes are uncommitted on `feat/phase5-release`. GitHub-hosted **Foundation checks** await a push, and the `v0.4.0` tag requires operator approval.
