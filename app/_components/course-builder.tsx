@@ -56,9 +56,9 @@ export function CourseCreator({ locale }: { locale: Locale }) {
     }
   }
 
-  return <form className="identity-form" onSubmit={create}>
+  return <form className="identity-form course-create-form" onSubmit={create}>
     <label>{text.slug}<input name="slug" dir="ltr" required maxLength={80} pattern="[a-z0-9]+(-[a-z0-9]+)*" /></label>
-    <button className="identity-button" disabled={pending}>{pending ? text.pending : text.create}</button>
+    <button className="identity-button primary-action" disabled={pending}>{pending ? text.pending : text.create}</button>
     {error && <p role="alert">{error}</p>}
   </form>;
 }

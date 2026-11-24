@@ -132,6 +132,7 @@ JS
     if [ "${PHASE6_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase6.spec.ts; fi
     if [ "${PHASE7_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase7.spec.ts; fi
     if [ "${PHASE8_TEST:-}" = 1 ]; then pnpm exec playwright test tests/e2e/phase8.spec.ts; fi
+    pnpm exec playwright test tests/e2e/sidebar-workspace.spec.ts
   '
   docker rm "$project-browser" >/dev/null
   if [[ "${PHASE6_TEST:-}" == 1 ]]; then

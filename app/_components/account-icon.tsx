@@ -15,6 +15,10 @@ const symbols = {
   book: <path d="M12 6c-3-2-5-2-9-2v15c4 0 6 0 9 2 3-2 5-2 9-2V4c-4 0-6 0-9 2Zm0 0v15" />,
   chart: <path d="M4 4v16h16M8 16v-4m5 4V8m5 8V5" />,
   globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z" /></>,
+  home: <path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm6 11v-7h6v7" />,
+  menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  person: <><circle cx="12" cy="8" r="3.5" /><path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" /></>,
+  terminal: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="m7 9 3 3-3 3m6 0h4" /></>,
 } satisfies Record<string, ReactNode>;
 
 export function AccountIcon({ name }: { name: keyof typeof symbols }) {
