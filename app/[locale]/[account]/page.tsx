@@ -1,12 +1,50 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { identityCopy } from '@/features/identity/copy';
+import { assessmentCopy } from '@/features/assessment/copy';
+import { builderCopy } from '@/features/authoring/copy';
+import { authorRoles } from '@/features/authoring/policy';
+import { guidedCopy } from '@/features/guided/copy';
+import type { Role } from '@/features/identity/policy';
 import { returnPath } from '@/features/identity/return-path';
 import { currentPrincipal } from '@/features/identity/session';
 import { learningCopy } from '@/features/learning/copy';
-import { isLocale } from '@/i18n/locales';
+import { isLocale, type Locale } from '@/i18n/locales';
+import { copy } from '@/i18n/messages';
+import type { ComponentProps } from 'react';
 import { AccountIcon } from '../../_components/account-icon';
 import { SignInForm } from '../../_components/auth-form';
+
+function DashboardCards({ locale, role }: { locale: Locale; role: Role }) {
+  const account = identityCopy(locale);
+  const t = copy(locale);
+  const actions: { path: string; title: string; description: string; icon: ComponentProps<typeof AccountIcon>['name'] }[] = [
+    { path: 'profile', title: account.profile, description: t('profileAction'), icon: 'person' },
+    { path: 'courses', title: t('courses'), description: t('catalogAction'), icon: 'book' },
+  ];
+  if (role === 'STUDENT') actions.push(
+    { path: 'learning', title: learningCopy(locale).learning, description: t('learningAction'), icon: 'chart' },
+  );
+  if (authorRoles.some((author) => author === role)) actions.push(
+    { path: 'builder', title: builderCopy(locale).builder, description: t('builderAction'), icon: 'terminal' },
+    { path: 'question-bank', title: assessmentCopy(locale).bank, description: t('bankAction'), icon: 'grid' },
+    { path: 'guided-reviews', title: guidedCopy(locale).queue, description: t('reviewsAction'), icon: 'shield' },
+  );
+  if (role === 'OWNER' || role === 'ADMIN') actions.push(
+    { path: 'admin/users', title: account.admin, description: t('usersAction'), icon: 'users' },
+  );
+  return <section aria-labelledby="dashboard-actions">
+    <h2 id="dashboard-actions">{t('quickActions')}</h2>
+    <ul className="card-grid dashboard-grid">{actions.map(({ path, title, description, icon }) => {
+      const id = `action-${path.replace('/', '-')}`;
+      return <li key={path}><Link className="card workspace-card action-card" href={`/${locale}/${path}`} aria-labelledby={id}>
+        <div className="action-card-top"><span className="card-icon"><AccountIcon name={icon} /></span>
+          <span className="action-arrow"><AccountIcon name="arrow" /></span></div>
+        <h3 id={id}>{title}</h3><p>{description}</p>
+      </Link></li>;
+    })}</ul>
+  </section>;
+}
 
 export default async function AccountPage({ params, searchParams }: PageProps<'/[locale]/[account]'>) {
   const { locale, account } = await params;
@@ -52,19 +90,18 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
   }
 
   return <section className="page-copy">
-    <h1>{t[account]}</h1>
-    {account === 'profile' ? <dl className="notice">
-      <dt>{t.name}</dt><dd><bdi>{principal.name}</bdi></dd>
-      <dt>{t.email}</dt><dd><bdi dir="ltr">{principal.email}</bdi></dd>
-      <dt>{t.role}</dt><dd>{t[principal.role]}</dd>
-      <dt>{t.status}</dt><dd>{t.active}</dd>
+    <header className="workspace-page-heading">
+      <h1>{t[account]}</h1>
+      {account !== 'profile' && <><p>{t.welcome} <bdi>{principal.name}</bdi></p>
+        <span className="workspace-pill">{t[principal.role]}</span></>}
+    </header>
+    {account === 'profile' ? <dl className="notice profile-facts">
+      <div><dt>{t.name}</dt><dd><bdi>{principal.name}</bdi></dd></div>
+      <div><dt>{t.email}</dt><dd><bdi className="profile-email" dir="ltr" translate="no">{principal.email}</bdi></dd></div>
+      <div><dt>{t.role}</dt><dd><span className="workspace-pill">{t[principal.role]}</span></dd></div>
+      <div><dt>{t.status}</dt><dd><span className="workspace-pill account-active">{t.active}</span></dd></div>
     </dl> : <>
-      <p>{t.welcome} <bdi>{principal.name}</bdi></p>
-      <p>{t[principal.role]}</p>
-      <Link href={`/${locale}/profile`}>{t.profile}</Link>
-      {principal.role === 'STUDENT' && <p><Link href={`/${locale}/learning`}>{learningCopy(locale).learning}</Link></p>}
-      {account === 'dashboard' && (principal.role === 'OWNER' || principal.role === 'ADMIN')
-        && <p><Link href={`/${locale}/admin/users`}>{t.admin}</Link></p>}
+      <DashboardCards locale={locale} role={principal.role} />
     </>}
   </section>;
 }

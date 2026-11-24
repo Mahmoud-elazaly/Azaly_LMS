@@ -1,12 +1,11 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { assessmentCopy } from '@/features/assessment/copy';
 import { listBankQuestions } from '@/features/assessment/service';
-import { builderCopy } from '@/features/authoring/copy';
 import { authorRoles } from '@/features/authoring/policy';
 import { currentPrincipal } from '@/features/identity/session';
 import { isLocale } from '@/i18n/locales';
 import { QuestionBank } from '../../_components/question-bank';
+import { AuthoringNavigation } from '../../_components/authoring-navigation';
 
 export default async function QuestionBankPage({ params }: PageProps<'/[locale]/question-bank'>) {
   const { locale } = await params;
@@ -19,8 +18,8 @@ export default async function QuestionBankPage({ params }: PageProps<'/[locale]/
   }
   const questions = await listBankQuestions().catch(() => null);
   return <section className="page-copy">
-    <Link href={`/${locale}/builder`}>{builderCopy(locale).builder}</Link>
     <h1>{text.bank}</h1>
+    <AuthoringNavigation locale={locale} active="question-bank" />
     {questions ? <QuestionBank locale={locale} initial={questions} /> : <p role="alert">{text.unavailable}</p>}
   </section>;
 }

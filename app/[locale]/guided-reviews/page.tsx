@@ -1,11 +1,10 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { builderCopy } from '@/features/authoring/copy';
 import { authorRoles } from '@/features/authoring/policy';
 import { guidedCopy } from '@/features/guided/copy';
 import { listGuidedReviews } from '@/features/guided/service';
 import { currentPrincipal } from '@/features/identity/session';
 import { isLocale } from '@/i18n/locales';
+import { AuthoringNavigation } from '../../_components/authoring-navigation';
 import { GuidedReviewCard } from '../../_components/guided-labs';
 
 export default async function GuidedReviewPage({ params }: PageProps<'/[locale]/guided-reviews'>) {
@@ -19,8 +18,8 @@ export default async function GuidedReviewPage({ params }: PageProps<'/[locale]/
   }
   const entries = await listGuidedReviews(locale).catch(() => null);
   return <section className="page-copy">
-    <Link href={`/${locale}/builder`}>{builderCopy(locale).builder}</Link>
     <h1>{text.queue}</h1>
+    <AuthoringNavigation locale={locale} active="guided-reviews" />
     {entries === null ? <p role="alert">{text.unavailable}</p>
       : entries.length === 0 ? <p>{text.empty}</p>
       : <div className="builder-fields">{entries.map((entry) =>

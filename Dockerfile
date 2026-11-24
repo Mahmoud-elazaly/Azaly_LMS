@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.19
 FROM node:24-bookworm-slim AS package-manager
 ENV COREPACK_HOME=/opt/corepack
 WORKDIR /app
@@ -15,7 +16,8 @@ RUN --mount=type=cache,id=azaly-lms-pnpm,target=/root/.local/share/pnpm/store,sh
     pnpm install --frozen-lockfile --prefer-offline
 
 FROM dependencies AS build
-COPY . .
+# Preserve the frozen install's manifest timestamps across source-only checkouts.
+COPY --exclude=package.json --exclude=pnpm-lock.yaml --exclude=pnpm-workspace.yaml . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
@@ -32,7 +34,7 @@ USER node
 CMD ["pnpm", "db:migrate"]
 
 FROM dependencies AS dev
-COPY --chown=node:node . .
+COPY --chown=node:node --exclude=package.json --exclude=pnpm-lock.yaml --exclude=pnpm-workspace.yaml . .
 RUN chown node:node /app
 ENV NEXT_TELEMETRY_DISABLED=1
 USER node
@@ -50,7 +52,7 @@ RUN --mount=type=cache,id=azaly-lms-apt-cache,target=/var/cache/apt,sharing=lock
     && mkdir -p /opt/playwright \
     && cp -a /var/cache/ms-playwright/. /opt/playwright/ \
     && chmod -R a+rX /opt/playwright
-COPY --chown=node:node . .
+COPY --chown=node:node --exclude=package.json --exclude=pnpm-lock.yaml --exclude=pnpm-workspace.yaml . .
 RUN chown node:node /app
 ENV NEXT_TELEMETRY_DISABLED=1
 USER node
