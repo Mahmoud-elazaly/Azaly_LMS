@@ -16,6 +16,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
     export REAL_LAB_BRIDGE_URL=http://lab-bridge:8400
   fi
   if [[ "${PHASE8_TEST:-}" == 1 ]]; then source infra/verify-phase8-support.sh; fi
+  if [[ "${PHASE9_TEST:-}" == 1 ]]; then source infra/verify-phase9-support.sh; prefix=academy-phase9; fi
   project="$prefix-$(openssl rand -hex 6)"
   container="$project-web"
   dc() { docker compose -p "$project" "${compose_files[@]}" "$@"; }
@@ -107,6 +108,9 @@ JS
   if [[ "${PHASE8_TEST:-}" == 1 ]]; then
     dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase8-permissions.sql
   fi
+  if [[ "${PHASE9_TEST:-}" == 1 ]]; then
+    dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase9-permissions.sql
+  fi
   dc run -d --no-deps --name "$container" web
   wait_for_app() {
     local attempt
@@ -141,6 +145,14 @@ JS
       import { labFiles } from "./src/features/curriculum/prometheus-grafana/lab-kit.ts";
       console.log(JSON.stringify(labFiles));
     ' | bash infra/verify-phase6-snippets.sh "$project-practice"
+  fi
+  if [[ "${PHASE9_TEST:-}" == 1 ]]; then
+    # Phase 6 checks the exact curated enrollment count before Phase 9 adds a learner.
+    dc --profile test run --name "$project-browser" browser sh -eu -c '
+      pnpm build
+      pnpm exec playwright test tests/e2e/phase9.spec.ts
+    '
+    docker rm "$project-browser" >/dev/null
   fi
   if [[ "${PHASE7_TEST:-}" == 1 ]]; then phase7_check_worker; fi
 )

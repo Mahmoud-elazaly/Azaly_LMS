@@ -22,3 +22,7 @@ export function guidedCommand<T>(token: string, context: { operation: string; id
   return query<T>('SELECT learning.guided_command($1, $2, $3, $4, $5) AS result',
     [token, context.operation, context.id, context.locale, payload ?? null]);
 }
+
+export function masteryEvidence<T>(token: string, locale: Locale) {
+  return query<T>('SELECT knowledge.learner_evidence($1, $2) AS result', [token, locale]);
+}

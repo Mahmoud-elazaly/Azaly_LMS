@@ -111,7 +111,7 @@ function QuizForm({ quiz, enrollment, locale, onGrade }: {
     }
   }
 
-  return <form className="notice builder-fields" onSubmit={submit}>
+  return <form id={`quiz-${quiz.id}`} className="notice builder-fields" tabIndex={-1} onSubmit={submit}>
     <h3>{quiz.title}</h3>
     {quiz.questions.map((question) => <fieldset key={question.id} disabled={pending}>
       <legend>{question.prompt}</legend>
@@ -122,10 +122,10 @@ function QuizForm({ quiz, enrollment, locale, onGrade }: {
   </form>;
 }
 
-export function CoursePlayer({ locale, data }: { locale: Locale; data: PlayerData }) {
+export function CoursePlayer({ locale, data, lessonId }: { locale: Locale; data: PlayerData; lessonId?: string }) {
   const text = learningCopy(locale);
   const lessons = data.content?.modules.flatMap((courseModule) => courseModule.lessons) ?? [];
-  const [active, setActive] = useState(data.resumeLessonId ?? lessons[0]?.id);
+  const [active, setActive] = useState(lessons.find((item) => item.id === lessonId)?.id ?? data.resumeLessonId ?? lessons[0]?.id);
   const [progress, setProgress] = useState(data.progress);
   const [grades, setGrades] = useState(data.grades);
   const [last, setLast] = useState<Grade>();

@@ -14,17 +14,19 @@ export default async function LearningPage({ params, searchParams }: PageProps<'
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const text = learningCopy(locale);
-  const { id } = await searchParams;
+  const { id, lesson } = await searchParams;
   const principal = await currentPrincipal();
-  if (!principal) redirect(`/${locale}/login?next=${encodeURIComponent(selectedCoursePath(locale, 'learning', id))}`);
+  if (!principal) redirect(`/${locale}/login?next=${encodeURIComponent(selectedCoursePath(locale, 'learning', id, lesson))}`);
   if (principal.role !== 'STUDENT') return <section className="page-copy"><h1>{text.learning}</h1><p>{text.denied}</p></section>;
 
-  if (id !== undefined && !z.uuid().safeParse(id).success) notFound();
+  if ((id !== undefined && !z.uuid().safeParse(id).success) ||
+      (lesson !== undefined && (!id || !z.uuid().safeParse(lesson).success))) notFound();
   if (typeof id === 'string') {
     const data = await readPlayer(id, locale).catch(() => null);
     return <section className="page-copy">
       <Link href={`/${locale}/learning`}>{text.learning}</Link>
-      {data ? <CoursePlayer key={id} locale={locale} data={data} /> : <p role="alert">{text.unavailable}</p>}
+      {data ? <CoursePlayer key={`${id}/${lesson ?? ''}`} locale={locale} data={data}
+        lessonId={typeof lesson === 'string' ? lesson : undefined} /> : <p role="alert">{text.unavailable}</p>}
     </section>;
   }
 

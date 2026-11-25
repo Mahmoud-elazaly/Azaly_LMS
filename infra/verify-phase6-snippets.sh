@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 project="${1:?Provide the isolated practice project name}"
-[[ "$project" =~ ^academy-phase[67]-[0-9a-f]{12}-practice$ ]]
+[[ "$project" =~ ^academy-phase[679]-[0-9a-f]{12}-practice$ ]]
 directory="$(mktemp -d)"
 export LAB_GRAFANA_PASSWORD="$(openssl rand -hex 24)"
 dc() { docker compose -p "$project" --project-directory "$directory" -f "$directory/compose.yaml" "$@"; }

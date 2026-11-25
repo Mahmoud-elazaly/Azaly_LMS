@@ -31,3 +31,19 @@ Migration `0009_content_import_assessments` adds a nullable `last_import_digest`
 Lesson snapshots can contain localized `markdown` blocks. Bank records and snapshot questions use `type` to distinguish `find_bug` and `cli_recall`. Records without a type retain their multiple-choice shape. `find_bug` uses one-based line numbers and a private exact set of faulty lines. `cli_recall` has a private `exact`, `flags`, or `regex` rule. Attempt answers remain JSON and can contain an index, an array of line numbers, or a CLI string. The learner read returns prompts and the type-specific display fields. The learner submit returns only the grade.
 
 `bash infra/verify.sh` rehearses the upgrade from v0.6.0 and compares fixture fingerprints before and after applying `0009`. [Migration evidence](PLANS.md#phase-8--lesson-diagrams-assessments-and-course-import)
+
+## Phase 9 concept ontology and mastery
+
+Migration `0010_knowledge_mastery` adds the private `knowledge` schema. A concept has a unique slug, one of six track slugs, bilingual titles and summaries, and a creation timestamp. `concept_edges` links two distinct concepts. Each directed source, target, and relation tuple is unique. The allowed relations are `prerequisite`, `integrates_with`, `monitors`, `secures`, and `deploys_to`.
+
+`lesson_concepts` and `question_concepts` pair a course slug and stable snapshot occurrence ID with a concept. `lab_concepts` pairs a course slug and Guided Lab ID, or the approved Real Lab template version, with a concept. The migration seeds twelve concepts and fifteen edges, maps all fourteen lessons, twelve quiz questions, and four Guided Labs from the curated Prometheus and Grafana path, and maps the NGINX pilot. The seed inserts use conflict-safe stable keys. A lesson, question, or lab contributes only when its ID occurs in the selected published snapshot. The ontology can describe a subject before it has published practice.
+
+The mastery reader uses an owned enrollment’s published revision, or the latest public published revision in the requested locale for enrollment links. The latest immutable attempt per enrollment and quiz supplies quiz evidence. PostgreSQL reuses the existing grader against the pinned question definition and returns per-concept quiz counts. It returns completion flags and provenance without answer keys, submitted answers, lab evidence, or review feedback.
+
+| Signal | Weight | Credit |
+| --- | --- | --- |
+| Lessons | 25% | Completed linked lessons divided by linked lessons |
+| Quizzes | 40% | Correct linked questions from the latest attempt per quiz divided by available linked questions. The breakdown also shows accuracy among attempted questions. |
+| Labs | 35% | Average credit across available linked labs. A system-verified Real Lab earns 100%, an instructor-approved Guided Lab 85%, a self-reported Guided Lab 50%, and incomplete or unapproved work 0%. |
+
+The weighted calculator accepts evidence signals with a credit, maximum, and weight. An absent category is omitted from the denominator. Tracks average their concepts with available evidence. The remediation queue sorts actionable concepts by ascending score, descending missed questions, descending incomplete labs, then slug. It prioritizes retrying a failed quiz and completing pending labs when choosing a practice link. Mastery is calculated on read from the existing records. [Upgrade and grading checks](PLANS.md#phase-9--cross-track-knowledge-graph-and-mastery)

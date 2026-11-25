@@ -54,3 +54,14 @@ Run `bash infra/verify.sh` for the cumulative gate. The Phase 8 gate first appli
 - Verify the scoped import function and private grading helpers through a rollback-only SQL test. The test covers author ownership, learner denial, grade scope and the absence of public grants. Closed registration continues to return HTTP 404.
 
 Observed results are recorded in [PLANS.md](PLANS.md#phase-8--lesson-diagrams-assessments-and-course-import).
+
+## Phase 9 cross-track knowledge graph and mastery
+
+Run `bash infra/verify.sh` for the cumulative Phase 1–9 gate. `bash infra/verify-phase9.sh` runs the same checks. The gate applies the v0.7.0 migration history to an isolated database, applies and replays `0010`, and compares fingerprints for existing identity, imported drafts, publication snapshots, enrollments, grades, and both lab models. It reruns closed-registration HTTP checks and all prior browser and SQL suites.
+
+- Assert the seeded concept and relation counts and reject invalid, duplicate, self, and dangling edges. Check ontology table privileges, the definer role and search path, public revocation, and execution denial for other runtime roles.
+- Compare two independent Student sessions. Verify pinned lesson completion, mapped MCQ, `find_bug`, and `cli_recall` outcomes from the latest immutable quiz attempt, Guided Lab review, and `SYSTEM_VERIFIED` Real Lab credit. Confirm the mastery projection excludes private answers, rubric fields, evidence, and feedback. Deny expired, banned, impersonated, and staff sessions.
+- In Chromium, exercise track and relationship filters, zoom, keyboard and pointer panning, and drawer dismissal and focus return. Follow deep links to an exact lesson, quiz, and Guided Lab. Check that a failed quiz offers a retry and that a passing retry and Guided Lab submission update both score and next practice while a second learner’s queue stays unchanged.
+- Check both learner routes in Arabic and English, Light and Dark, at 390×844, 1280×800, and 1440×900. Verify page reflow, accessible filters, the six-domain radar text key, and LTR graph geometry within the mirrored Arabic shell.
+
+[Observed Phase 9 results](PLANS.md#phase-9--cross-track-knowledge-graph-and-mastery)

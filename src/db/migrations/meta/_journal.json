@@ -71,6 +71,13 @@
       "when": 1795471441874,
       "tag": "0009_content_import_assessments",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795505768225,
+      "tag": "0010_knowledge_mastery",
+      "breakpoints": true
     }
   ]
 }

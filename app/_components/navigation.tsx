@@ -9,7 +9,7 @@ import type { Locale } from '@/i18n/locales';
 
 export type NavigationGroup = {
   label?: string;
-  links: { path: string; label: string; icon: ComponentProps<typeof AccountIcon>['name'] }[];
+  links: { path: string; label: string; icon: ComponentProps<typeof AccountIcon>['name']; documentNavigation?: true }[];
 };
 
 export function Navigation({ locale, label, groups, onNavigate }: {
@@ -22,12 +22,13 @@ export function Navigation({ locale, label, groups, onNavigate }: {
   return <nav className="workspace-navigation" aria-label={label}>
     {groups.map((group) => <div className="workspace-nav-group" key={group.links[0].path}>
       {group.label && <h2 className="workspace-nav-label">{group.label}</h2>}
-      <ul>{group.links.map(({ path, label, icon }) => {
+      <ul>{group.links.map(({ path, label, icon, documentNavigation }) => {
         const href = `/${locale}${path}`;
         const active = pathname === href || (path === '/courses' && pathname.startsWith(`${href}/`));
-        return <li key={path}><Link href={href} onNavigate={onNavigate} aria-current={active ? 'page' : undefined}>
-          <AccountIcon name={icon} /><span>{label}</span>
-        </Link></li>;
+        const link = { href, 'aria-current': active ? 'page' as const : undefined };
+        const content = <><AccountIcon name={icon} /><span>{label}</span></>;
+        return <li key={path}>{documentNavigation ? <a {...link}>{content}</a>
+          : <Link {...link} onNavigate={onNavigate}>{content}</Link>}</li>;
       })}</ul>
     </div>)}
   </nav>;
@@ -41,7 +42,14 @@ export function LocaleSwitch({ locale, language }: { locale: Locale; language: s
   const query = useSearchParams();
   let alternate = `/${other}${suffix ? `/${suffix}` : ''}`;
   if (suffix === 'learning' || suffix === 'builder') {
-    alternate = selectedCoursePath(other, suffix, query.get('id'));
+    alternate = selectedCoursePath(other, suffix, query.get('id'), query.get('lesson'));
+  } else if (suffix === 'knowledge-graph') {
+    const filters = new URLSearchParams();
+    for (const name of ['track', 'relation', 'concept']) {
+      const value = query.get(name);
+      if (value && /^[a-z0-9_-]{1,64}$/.test(value)) filters.set(name, value);
+    }
+    if (filters.size) alternate += `?${filters}`;
   } else if (suffix === 'login') {
     const params = new URLSearchParams();
     if (query.has('next')) {
@@ -61,8 +69,11 @@ export function LocaleSwitch({ locale, language }: { locale: Locale; language: s
 
   return <a className="language" href={alternate} hrefLang={other} lang={other}
       onClick={(event) => {
-        if (suffix !== 'activate' || !window.location.hash || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const hash = window.location.hash;
+        const retain = suffix === 'activate' ? hash : suffix === 'learning' &&
+          /^#(?:current-lesson|(?:quiz|guided)-[a-f0-9-]{36})$/.test(hash);
+        if (!retain || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        window.location.replace(alternate + window.location.hash);
+        window.location.replace(alternate + hash);
       }}><AccountIcon name="globe" /><span>{language}</span></a>;
 }

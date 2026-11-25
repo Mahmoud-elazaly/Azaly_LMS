@@ -6,7 +6,7 @@ loadEnvConfig(process.cwd());
 
 export default defineConfig({
   dialect: 'postgresql',
-  schema: ['./src/db/schema.ts', './src/db/identity-schema.ts', './src/db/authoring-schema.ts', './src/db/learning-schema.ts', './src/db/real-lab-schema.ts'],
+  schema: ['./src/db/schema.ts', './src/db/identity-schema.ts', './src/db/authoring-schema.ts', './src/db/learning-schema.ts', './src/db/real-lab-schema.ts', './src/db/mastery-schema.ts'],
   out: './src/db/migrations',
   ...(process.env.DATABASE_URL && { dbCredentials: { url: readDatabaseUrl() } }),
 });
