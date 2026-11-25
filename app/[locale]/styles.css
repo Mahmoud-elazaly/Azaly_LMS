@@ -382,3 +382,5 @@ button.identity-button { overflow: hidden; text-overflow: ellipsis; }
 .diagram-viewport, .snippet-lines { background: var(--field); border-color: var(--control-border); }
 .snippet-lines { padding: .5rem; border: 1px solid var(--control-border); border-radius: .55rem; }
 @media (prefers-reduced-motion: reduce) { .workspace-card { transition: none; } }
+
+:is(.course-player form[id^="quiz-"], .guided-card[id^="guided-"]) { scroll-margin-block-start: 1rem; }

@@ -70,7 +70,7 @@ function LearnerLab({ lab, locale, enrollmentId }: { lab: GuidedLab; locale: Loc
     }
   }
 
-  return <article className="notice builder-fields guided-card" aria-busy={pending}>
+  return <article id={`guided-${lab.id}`} tabIndex={-1} className="notice builder-fields guided-card" aria-busy={pending}>
     <h3>{lab.title}</h3>
     <LabInstructions lab={lab} locale={locale} />
     <form className="builder-fields" method="post" action="/api/learning/guided-labs"

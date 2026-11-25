@@ -56,9 +56,11 @@ INSERT INTO real_lab.checks (id,attempt_id,template_version,checker_version,conf
 SQL
   local before
   before="$(phase8_legacy_digest)"
-  dc run --rm migrate
+  phase7_migration_slice 10
   test "$(phase7_sql -c 'SELECT count(*) FROM drizzle.__drizzle_migrations')" = 10
   test "$before" = "$(phase8_legacy_digest)"
+  echo 'Phase 8 upgraded the v0.6.0 fixtures and preserved credentials, sessions, invitations, courses, grades and both lab models.'
+  if [[ "${PHASE9_TEST:-}" == 1 ]]; then phase9_upgrade; fi
   phase7_sql <<'SQL'
 DELETE FROM real_lab.checks WHERE attempt_id='aaa80000-0000-4000-8000-000000000005';
 DELETE FROM real_lab.attempts WHERE id='aaa80000-0000-4000-8000-000000000005';
@@ -73,5 +75,4 @@ DELETE FROM public.courses WHERE id='aaa80000-0000-4000-8000-000000000001';
 DELETE FROM identity.invitation WHERE id='phase8-upgrade';
 DELETE FROM identity."user" WHERE id='phase8-upgrade';
 SQL
-  echo 'Phase 8 upgraded the v0.6.0 fixtures and preserved credentials, sessions, invitations, courses, grades and both lab models.'
 }
