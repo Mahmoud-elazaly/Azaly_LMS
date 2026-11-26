@@ -24,5 +24,10 @@ export function guidedCommand<T>(token: string, context: { operation: string; id
 }
 
 export function masteryEvidence<T>(token: string, locale: Locale) {
-  return query<T>('SELECT knowledge.learner_evidence($1, $2) AS result', [token, locale]);
+  return query<T>(`SELECT knowledge.learner_evidence($1, $2) ||
+    jsonb_build_object('interviews', interview.mastery_evidence($1)) AS result`, [token, locale]);
+}
+
+export function interviewCommand<T>(token: string, operation: string, id: string | null, payload?: object) {
+  return query<T>('SELECT interview.student_command($1, $2, $3, $4) AS result', [token, operation, id, payload ?? null]);
 }

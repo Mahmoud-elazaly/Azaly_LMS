@@ -60,7 +60,8 @@ export function MasteryDashboard({ data, locale, labsEnabled }: { data: MasteryS
       <h2 id="mastery-weakest">{t.weakest}</h2>
       {data.weakest.length ? <ol>{data.weakest.map((entry) => <li key={entry.slug}>
         <div className="mastery-queue-concept"><h3><bdi>{entry.titles[locale]}</bdi></h3><small>{t.tracks[entry.track]}</small></div>
-        <PracticeLink item={entry.action} locale={locale} labsEnabled={labsEnabled} />
+        {entry.action.kind !== 'concept' ? <PracticeLink item={entry.action} locale={locale} labsEnabled={labsEnabled} />
+          : <a href={`/${locale}/knowledge-graph?concept=${encodeURIComponent(entry.slug)}`}>{t.graph}</a>}
         <span className="mastery-score"><span className="sr-only">{t.score} </span>
           <bdi>{percent.format(entry.score / 100)}</bdi></span>
       </li>)}</ol> : <p>{t.noWeakest}</p>}

@@ -46,12 +46,14 @@ function summarize(items: Material[]): MasteryBreakdown {
   return breakdown;
 }
 
-function scoreConcept(concept: ConceptEvidence, labsEnabled: boolean): MasteryConcept {
+function scoreConcept(concept: ConceptEvidence, labsEnabled: boolean, interviewScore?: number): MasteryConcept {
   const items = concept.items.filter((item) => item.kind !== 'real' || labsEnabled || item.provenance === 'SYSTEM_VERIFIED');
   const breakdown = summarize(items);
   const { quizzes, lessons, labs } = breakdown;
-  const score = weightedMasteryScore([{ ...lessons, weight: 25 }, { ...quizzes, weight: 40 }, { ...labs, weight: 35 }]);
-  const needsRemediation = quizzes.attempted > quizzes.credit || items.some((item) => item.kind === 'guided' && item.review === 'NOT_APPROVED');
+  if (interviewScore !== undefined) breakdown.interview = { credit: interviewScore, possible: 100 };
+  const score = weightedMasteryScore([{ ...lessons, weight: 25 }, { ...quizzes, weight: 40 }, { ...labs, weight: 35 },
+    ...(breakdown.interview ? [{ ...breakdown.interview, weight: 20 }] : [])]);
+  const needsRemediation = breakdown.interview || quizzes.attempted > quizzes.credit || items.some((item) => item.kind === 'guided' && item.review === 'NOT_APPROVED');
   const started = lessons.credit || quizzes.attempted || labs.credit;
   const status = needsRemediation ? 'needsRemediation' : score !== null && score >= masteryThreshold ? 'mastered'
     : started ? 'inProgress' : 'notStarted';
@@ -71,11 +73,12 @@ function missedQuestions(concept: MasteryConcept) {
 }
 
 export function calculateMastery(evidence: Evidence, labsEnabled: boolean): MasterySnapshot {
-  const concepts = evidence.concepts.map((concept) => scoreConcept(concept, labsEnabled));
+  const interviewScores = new Map(Object.entries(evidence.interviews ?? {}));
+  const concepts = evidence.concepts.map((concept) => scoreConcept(concept, labsEnabled, interviewScores.get(concept.slug)));
   const slugs = new Set(concepts.map((concept) => concept.slug));
   const weakest = concepts.flatMap((concept) => {
     const { slug, track, titles, score, items, breakdown, status } = concept;
-    const action = nextPractice(items, labsEnabled);
+    const action = nextPractice(items, labsEnabled) ?? (breakdown.interview ? items[0] ?? { kind: 'concept' as const } : undefined);
     if (!action || score === null || (status === 'mastered' && breakdown.labs.incomplete === 0 && !missedQuestions(concept))) return [];
     const entry: Remediation = { slug, track, titles, score, action };
     return [{ entry, misses: missedQuestions(concept), incomplete: breakdown.labs.incomplete }];

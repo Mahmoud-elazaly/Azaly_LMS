@@ -1,0 +1,65 @@
+import type { Locale } from '../../i18n/locales';
+
+const en = {
+  nav: 'Mock Interview', title: 'Mock technical interview',
+  intro: 'Practice an operations interview and get feedback linked to your Knowledge Graph.',
+  setup: 'Interview setup', role: 'Role', seniority: 'Seniority', tracks: 'Tracks',
+  roles: { sysadmin: 'SysAdmin', devops: 'DevOps Engineer', sre: 'SRE' },
+  levels: { junior: 'Junior', mid: 'Mid-Level', senior: 'Senior' },
+  scopes: { linux: 'Linux', 'web-proxy': 'Web proxy', 'git-cicd': 'Git and CI/CD', containers: 'Containers',
+    observability: 'Observability', security: 'Security', iac: 'Infrastructure as code' },
+  disclosure: 'The interview sends your answers to Gemini. Leave out credentials and private operational details.',
+  start: 'Start interview', newInterview: 'New interview', history: 'Session history', empty: 'No interviews yet.',
+  older: 'Load older sessions', noOlder: 'You’ve reached the oldest session.',
+  active: 'In progress', completed: 'Evaluated', transcript: 'Transcript', interviewer: 'Interviewer', learner: 'Your answer',
+  answer: 'Answer', send: 'Send answer', evaluate: 'Evaluate interview', working: 'Working…', updated: 'Interview updated.',
+  limits: 'Session limits', turns: 'Answers', input: 'Input tokens reserved', output: 'Output tokens reserved',
+  answerLimit: 'Maximum 2,400 UTF-8 bytes per answer. Use backticks for commands and triple backticks for multiline code.',
+  scorecard: 'Interview scorecard', overall: 'Overall score', technical: 'Technical accuracy',
+  production: 'Production and security awareness', edgeCases: 'Missing edge cases', noEdgeCases: 'None identified.',
+  modelAnswer: 'Model answer', practice: 'Practice weak concepts', noWeak: 'No weak concepts were identified in the Knowledge Graph.',
+  graph: 'Open Knowledge Graph', denied: 'Mock interviews are available to learners.',
+  errors: {
+    400: 'Check your selections or answer length and try again.', 401: 'Your session has expired. Sign in again.',
+    403: 'You don’t have access to this interview.', 404: 'This interview is unavailable.',
+    409: 'The interview state changed. Review the transcript and try again.',
+    422: 'The token budget has been reached. Evaluate with the answers already recorded or start a new interview.',
+    429: 'Too many interview requests. Wait a minute and try again.',
+    502: 'Gemini didn’t return usable feedback. Try again.',
+    503: 'Interview requests are temporarily unavailable. Try again later.',
+  },
+};
+const ar: typeof en = {
+  nav: 'مقابلة تدريبية', title: 'مقابلة تقنية تدريبية',
+  intro: 'تدرّب على مقابلة في مجال تشغيل الأنظمة واحصل على تقييم مرتبط بخريطة المعرفة.',
+  setup: 'إعداد المقابلة', role: 'الدور', seniority: 'مستوى الخبرة', tracks: 'المسارات',
+  roles: { sysadmin: 'مسؤول الأنظمة', devops: 'مهندس DevOps', sre: 'مهندس موثوقية المواقع' },
+  levels: { junior: 'مبتدئ', mid: 'متوسط', senior: 'خبير' },
+  scopes: { linux: 'لينكس', 'web-proxy': 'وكيل الويب', 'git-cicd': 'Git والتكامل والتسليم المستمران', containers: 'الحاويات',
+    observability: 'قابلية الرصد', security: 'الأمان', iac: 'البنية التحتية ككود' },
+  disclosure: 'تُرسل إجابات المقابلة إلى Gemini. تجنّب كتابة بيانات الاعتماد أو تفاصيل الأنظمة الخاصة.',
+  start: 'ابدأ المقابلة', newInterview: 'مقابلة جديدة', history: 'سجل المقابلات', empty: 'لا توجد مقابلات بعد.',
+  older: 'اعرض المقابلات الأقدم', noOlder: 'وصلت إلى أقدم مقابلة.',
+  active: 'قيد التقدّم', completed: 'تم التقييم', transcript: 'نص المقابلة', interviewer: 'المحاوِر', learner: 'إجابتك',
+  answer: 'الإجابة', send: 'أرسل الإجابة', evaluate: 'قيّم المقابلة', working: 'جارٍ المعالجة…', updated: 'تم تحديث المقابلة.',
+  limits: 'حدود الجلسة', turns: 'الإجابات', input: 'رموز الإدخال المحجوزة', output: 'رموز الإخراج المحجوزة',
+  answerLimit: 'الحد الأقصى ٢٬٤٠٠ بايت بترميز UTF-8 لكل إجابة. ضع الأوامر بين علامتي اقتباس خلفيتين، واستخدم ثلاث علامات في طرفَي الكود متعدد الأسطر.',
+  scorecard: 'تقييم المقابلة', overall: 'النتيجة الإجمالية', technical: 'الدقة التقنية',
+  production: 'مراعاة الإنتاج والأمان', edgeCases: 'الحالات الحدّية التي لم تُذكر', noEdgeCases: 'لم تُحدّد حالات.',
+  modelAnswer: 'إجابة نموذجية', practice: 'تدرّب على المفاهيم التي تحتاج إلى مراجعة',
+  noWeak: 'لم تُحدّد مفاهيم تحتاج إلى مراجعة في خريطة المعرفة.',
+  graph: 'افتح خريطة المعرفة', denied: 'المقابلات التدريبية متاحة للمتعلّمين.',
+  errors: {
+    400: 'تحقّق من اختياراتك أو طول الإجابة وحاول مجددًا.', 401: 'انتهت جلستك. سجّل الدخول مرة أخرى.',
+    403: 'ليس لديك إذن للوصول إلى هذه المقابلة.', 404: 'هذه المقابلة غير متاحة.',
+    409: 'تغيّرت حالة المقابلة. راجع نص المقابلة وحاول مجددًا.',
+    422: 'بلغت الحدّ المسموح للرموز. قيّم الإجابات المسجّلة أو ابدأ مقابلة جديدة.',
+    429: 'أرسلت طلبات كثيرة. انتظر دقيقة وحاول مجددًا.',
+    502: 'تعذّر الحصول على ردّ صالح من Gemini. حاول مجددًا.',
+    503: 'طلبات المقابلة غير متاحة مؤقتًا. حاول لاحقًا.',
+  },
+};
+
+export function interviewCopy(locale: Locale) {
+  return locale === 'ar' ? ar : en;
+}

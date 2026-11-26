@@ -15,9 +15,10 @@ phase9_upgrade() {
   phase7_sql -c "UPDATE authoring.drafts SET last_import_digest=repeat('9',64) WHERE course_id='aaa80000-0000-4000-8000-000000000001'"
   local before
   before="$(phase9_legacy_digest)"
-  dc run --rm migrate
-  dc run --rm migrate
+  phase7_migration_slice 11
+  phase7_migration_slice 11
   test "$(phase7_sql -c 'SELECT count(*) FROM drizzle.__drizzle_migrations')" = 11
   test "$before" = "$(phase9_legacy_digest)"
   echo 'Phase 9 upgraded and replayed the v0.7.0 fixtures and preserved identity, imported drafts, enrollment pins, grades, and both lab models.'
+  if [[ "${PHASE10_TEST:-}" == 1 ]]; then phase10_upgrade; fi
 }

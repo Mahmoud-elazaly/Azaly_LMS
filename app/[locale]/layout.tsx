@@ -17,6 +17,7 @@ import { currentPrincipal } from '@/features/identity/session';
 import { SignOutForm } from '../_components/auth-form';
 import { learningCopy } from '@/features/learning/copy';
 import { builderCopy } from '@/features/authoring/copy';
+import { interviewCopy } from '@/features/interview/copy';
 import { masteryCopy } from '@/features/mastery/copy';
 import './styles.css';
 import './account.css';
@@ -55,6 +56,7 @@ export default async function Layout({ children, params }: { children: ReactNode
       { path: '/learning', label: learningCopy(locale).learning, icon: 'book' },
       { path: '/knowledge-graph', label: mastery.graph, icon: 'connections', documentNavigation: true },
       { path: '/mastery', label: mastery.mastery, icon: 'chart', documentNavigation: true },
+      { path: '/interview', label: interviewCopy(locale).nav, icon: 'terminal', documentNavigation: true },
     );
     groups.push({ label: t('workspace'), links });
     if (principal.role !== 'STUDENT') {
