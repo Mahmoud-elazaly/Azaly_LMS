@@ -443,3 +443,12 @@ Ran UI/UX Pro Max for `'online course' --domain product --rtl`, `'technical inte
 | Browser asset scan | Searched the standalone build’s `.next/static` bundle for the Gemini environment variable, credential header, and test credential. None appeared in client assets. |
 | Cumulative `bash infra/verify.sh` on WSL2 | Exited 0 in `academy-phase9-5594ace51b36` with lint, TypeScript, production builds, 57 Vitest tests, 22 Chromium tests, nine PostgreSQL permission suites, and four historical upgrade rehearsals. Closed registration, the Prometheus and Grafana practice stack, and the NGINX isolation, reconciliation, and offline expiry checks passed. The final interview browser build included the contrast correction. A temporary local Compose overlay supplied registry and Debian host mappings for Docker builds to work around WSL DNS. Log at `test-results/azaly-phase10-verify.log`. |
 | Source preservation | Compared both original HTML files, the architecture blueprint, migration SQL through `0010`, the lockfile, and GitHub workflows to `v0.8.0`. Their contents matched. `git diff --cached --check` passed. |
+
+## Application handover refresh
+
+On 2026-11-26, refreshed [CODEX_HANDOFF.md](CODEX_HANDOFF.md) for the software architect, software lead, and orchestrator using the released Phase 10 baseline. Added the maintenance rule to [AGENTS.md](AGENTS.md#maintaining-the-handover).
+
+| Check | Observed result |
+| --- | --- |
+| Documentation checks | `git diff --check` passed. A Python check resolved 78 repository-relative links, heading anchors, and feature paths across the handover and agent instructions. |
+| Read-only development smoke | Queried the local HTTP routes and counted the applied Drizzle migrations. The database had 12 applied migrations. Health, readiness, and both locale pages returned HTTP 200, with footer `0.9.0` in both locales. Direct email registration returned 404 and guest interview history returned 401. The Gemini key remains unset in development. |

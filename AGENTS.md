@@ -2,6 +2,10 @@
 
 Read the Hybrid Architecture MVP blueprint and PLANS.md before changing scope. Update PLANS.md with commands and actual gate evidence. Keep UI in app, domain logic in src/features, and database code in src/db. Never expose draft content through public queries. Maintain AR/EN parity and explicit LTR code direction. Preserve original HTML as offline reference. Keep lab execution, credentials and gateways outside the LMS.
 
+## Maintaining the handover
+
+Review [CODEX_HANDOFF.md](CODEX_HANDOFF.md) as part of each application or operational change. Update affected architecture, feature ownership, setup, release status, and open items in the same change. Keep detailed commands and verified outcomes in [PLANS.md](PLANS.md), and refresh the handover's release and operating state after a verified release or deployment. Keep credentials and private data out of both files.
+
 ## Design and UI work
 
 - Use `ui-ux-pro-max` to plan learner, quiz, lab, and authoring flows. Run `python3 -B .agents/skills/ui-ux-pro-max/scripts/search.py 'online course' --domain product --rtl` from the repository root. Use `--rtl` for style and product searches and `--stack nextjs` for framework guidance. Apply suggestions that fit the current application and task. [UI/UX Pro Max instructions](.agents/skills/ui-ux-pro-max/SKILL.md)
