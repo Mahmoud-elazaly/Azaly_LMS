@@ -1,6 +1,6 @@
 # Azaly LMS application handover
 
-**Reviewed 2026-11-26.** The released baseline is Phase 10, `v0.9.0`, at merge commit `dc3193bebcb4db321620e7490bca29633f7a153b`. Azaly LMS is a self-hosted Arabic and English LMS for infrastructure and DevOps training. It ships a public catalog, invitation-only accounts, course authoring, learner progress and assessments, Guided Labs, an isolated NGINX Real Lab pilot, course import, mastery analytics, and mock technical interviews. [Release](https://github.com/Mahmoud-elazaly/Azaly_LMS/releases/tag/v0.9.0) · [Phase 10 PR](https://github.com/Mahmoud-elazaly/Azaly_LMS/pull/9) · [Roadmap](ROADMAP.md)
+**Reviewed 2026-11-26.** The released baseline is Phase 11, `v1.0.0`, at merge commit `f00e4812eb719503a51aeafa0ff6a061e96d2816`. Azaly LMS is a self-hosted Arabic and English LMS for infrastructure and DevOps training. It ships a public catalog, invitation-only accounts, course authoring, learner progress and assessments, Guided Labs, an isolated NGINX Real Lab pilot, course import, mastery analytics, and mock technical interviews. [Release](https://github.com/Mahmoud-elazaly/Azaly_LMS/releases/tag/v1.0.0) · [Phase 11 PR](https://github.com/Mahmoud-elazaly/Azaly_LMS/pull/10) · [Roadmap](ROADMAP.md)
 
 ## Where each role starts
 
@@ -13,21 +13,21 @@
 Read the repository instructions and Hybrid Architecture MVP blueprint before changing scope. Use the roadmap for sequencing and the acceptance criteria and recorded commands to verify progress. [Repository instructions](AGENTS.md) · [Hybrid Architecture MVP blueprint](IT_Engineering_Academy_Hybrid_Architecture_MVP.md) · [Acceptance tests](ACCEPTANCE_TESTS.md) · [Execution evidence](PLANS.md)
 
 
-## Phase 11 release transition
+## Phase 11 hardening
 
-Phase 11 sets the package version to `1.0.0` and passed the local cumulative platform gate. It adds scoped ownership for the identity routines, a shared sign-in budget, bounded JSON processing, and browser privacy controls. Migration `0012_identity_definer_hardening` uses the existing `academy` database and is required before deployment. The release record identifies the tagged revision, and the operating state below records the previously verified development baseline. [Phase 11 evidence](PLANS.md#phase-11--production-readiness-security--release-hardening) · [Version release record](https://github.com/Mahmoud-elazaly/Azaly_LMS/releases/tag/v1.0.0) · [Production security audit](SECURITY_THREAT_MODEL.md#phase-11-production-security-audit)
+Phase 11 sets the package version to `1.0.0` and passed the local cumulative platform gate. It adds scoped ownership for the identity routines, a shared sign-in budget, bounded JSON processing, and browser privacy controls. Migration `0012_identity_definer_hardening` uses the existing `academy` database and is required before deployment. [Phase 11 evidence](PLANS.md#phase-11--production-readiness-security--release-hardening) · [Version release record](https://github.com/Mahmoud-elazaly/Azaly_LMS/releases/tag/v1.0.0) · [Production security audit](SECURITY_THREAT_MODEL.md#phase-11-production-security-audit)
 
 ## Release and operating state
 
-| Check | Observed for `v0.9.0` |
+| Check | Observed for `v1.0.0` |
 | --- | --- |
-| Delivery | The feature branch merged through PR #9 after the required `Foundation checks / verify` job passed. The annotated release tag points to the merge commit. |
-| Cumulative gate | `bash infra/verify.sh` exited 0 with 57 unit tests, 22 Chromium tests, nine PostgreSQL permission suites, and four historical upgrade rehearsals. |
-| Local development | `academy-dev` was migrated and rebuilt using the existing Real Lab configuration and the `academy-dev_postgres-data` volume. The migration count rose from 11 to 12. |
-| Smoke checks | On the review date, `/api/health` and `/api/ready` returned HTTP 200. `/ar` and `/en` returned HTTP 200 and showed `0.9.0` in the footer. The release smoke check returned 404 for direct email registration and 401 for interview history without a session. |
+| Delivery | The feature branch merged through PR #10 after the required `Foundation checks / verify` job passed. The annotated release tag points to the merge commit. |
+| Cumulative gate | `bash infra/verify.sh` exited 0 with 60 unit tests, 24 Chromium tests, ten PostgreSQL permission suites, and five historical upgrade rehearsals. |
+| Local development | `academy-dev` was migrated and rebuilt using the existing Real Lab configuration and the `academy-dev_postgres-data` volume. The migration count rose from 12 to 13. The approved local sandbox image was rebuilt after the host restart. |
+| Smoke checks | On the review date, `/api/health` and `/api/ready` returned HTTP 200. `/ar` and `/en` returned HTTP 200 and showed `1.0.0` in the footer. The release smoke check returned 404 for direct email registration and 401 for interview history without a session. |
 | Live interview generation | `GEMINI_API_KEY` is unset on the reviewed development stack. Automated interview verification used the deterministic server-side Gemini stub. |
 
-The local verification used temporary Docker build host mappings for WSL DNS. GitHub CI ran against the pushed revision. [Phase 10 local evidence](PLANS.md#phase-10--server-side-ai-mock-technical-interviewer) · [GitHub check](https://github.com/Mahmoud-elazaly/Azaly_LMS/actions/runs/45734932315)
+The local verification used temporary Docker build host mappings for WSL DNS. GitHub CI ran against the pushed revision. [Phase 11 local evidence](PLANS.md#phase-11--production-readiness-security--release-hardening) · [GitHub check](https://github.com/Mahmoud-elazaly/Azaly_LMS/actions/runs/45833072471)
 
 ## System boundaries
 
