@@ -8,7 +8,8 @@ async function sessionIdentity(requestHeaders: Headers) {
     headers: requestHeaders,
     query: { disableRefresh: true, disableCookieCache: true },
   });
-  if (!session || ('banned' in session.user && session.user.banned) ||
+  if (!session || ('impersonatedBy' in session.session && session.session.impersonatedBy != null) ||
+      ('banned' in session.user && session.user.banned) ||
       !('role' in session.user) || !isRole(session.user.role)) return null;
   return {
     principal: { id: session.user.id, name: session.user.name, email: session.user.email, role: session.user.role },

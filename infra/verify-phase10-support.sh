@@ -17,9 +17,10 @@ phase10_upgrade() {
   test "$(phase7_sql -c 'SELECT count(*) FROM drizzle.__drizzle_migrations')" = 11
   local before
   before="$(phase10_legacy_digest)"
-  dc run --rm migrate
-  dc run --rm migrate
+  phase7_migration_slice 12
+  phase7_migration_slice 12
   test "$(phase7_sql -c 'SELECT count(*) FROM drizzle.__drizzle_migrations')" = 12
   test "$before" = "$(phase10_legacy_digest)"
   echo 'Phase 10 upgraded and replayed the v0.8.0 fixtures without changing existing learning records or the knowledge ontology.'
+  if [[ "${PHASE11_TEST:-}" == 1 ]]; then phase11_upgrade; fi
 }

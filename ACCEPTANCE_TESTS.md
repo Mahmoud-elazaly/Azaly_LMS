@@ -73,3 +73,13 @@ Run `bash infra/verify.sh` for the cumulative Phase 1–9 gate. `bash infra/veri
 - Unit checks cover strict Zod output validation, scoped grounding, supplemental labels, request size and turn validation, provider caps and error handling, and interview evidence in mastery.
 - PostgreSQL checks verify private table grants and routine ownership, expired and staff session refusal, cross-user isolation, published lesson projection, concurrent and stale reservations, and per-learner rate and session budget enforcement.
 - Chromium drives the full flow through the loopback Gemini stub, including a malformed scorecard followed by recovery, persisted history, another learner’s isolated view, and Knowledge Graph and Weakest Concepts updates. It checks keyboard focus and the Arabic and English setup and scorecard in Light and Dark at 390×844, 1280×800 and 1440×900. [Observed gate results](PLANS.md#phase-10--server-side-ai-mock-technical-interviewer)
+
+## Phase 11 production readiness
+
+Run `bash infra/verify.sh` for the cumulative Phases 1–11 gate.
+
+- Replay the upgrade from `v0.9.0`, compare historical fixture fingerprints, and audit application definer ownership, fixed search paths, PUBLIC execution, and identity grants.
+- Check bounded UTF-8 JSON reads, secret-keyed sign-in buckets, and redacted diagnostics. Inspect the session cookie from a standalone instance configured for an HTTPS origin.
+- Check unauthenticated, wrong-role, cross-origin and impersonated requests, closed registration, and the shared sign-in budget. Scan browser assets built with synthetic server credentials.
+- Exercise the workspace and learner workflows in Arabic and English, in Light, Dark, and System following both operating-system color preferences. Keep technical commands and diagrams LTR and check page width and focus at the applicable desktop and mobile sizes.
+- Verify GitHub's required `verify` job, the annotated release tag and GitHub Release, then the retained development volume, health, readiness, and both locale footers. [Observed evidence](PLANS.md#phase-11--production-readiness-security--release-hardening)

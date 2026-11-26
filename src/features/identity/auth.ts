@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { identityDatabase } from '../../db/identity';
 import { account, session, user, verification } from '../../db/identity-schema';
 import { passwordMaximum, passwordMinimum } from './directory';
+import { signInRateBucket } from './request';
 import { reportAuthFailure } from './diagnostics';
 
 const environment = z.object({
@@ -34,6 +35,7 @@ function createAuth() {
   const db = identityDatabase(config.data.AUTH_DATABASE_URL);
   return {
     origin, db,
+    signInBucket: (email: string) => signInRateBucket(config.data.BETTER_AUTH_SECRET, email),
     auth: betterAuth({
       baseURL: origin,
       secret: config.data.BETTER_AUTH_SECRET,

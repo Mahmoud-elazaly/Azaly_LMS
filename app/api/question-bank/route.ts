@@ -1,3 +1,4 @@
+import { readRequestJson } from '@/lib/limited-json';
 import { z } from 'zod';
 import { bankMutation } from '@/features/assessment/policy';
 import { changeBankQuestion, listBankQuestions, readBankQuestion } from '@/features/assessment/service';
@@ -16,7 +17,7 @@ export function GET(request: Request) {
 
 export function POST(request: Request) {
   return contentResponse(request, authorRoles, async () => {
-    const input = bankMutation.safeParse(await request.json().catch(() => null));
+    const input = bankMutation.safeParse(await readRequestJson(request, 128 * 1024));
     if (!input.success) throw new AuthoringError(400);
     return changeBankQuestion(input.data, request.headers);
   });

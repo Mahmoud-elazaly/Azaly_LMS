@@ -1,3 +1,4 @@
+import { applyTheme, themeCases } from './theme-cases';
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -73,16 +74,17 @@ async function noPageOverflow(page: Page, locale: Locale, theme: string, width: 
 async function reviewLayouts(author: Page, learner: Page, draft: string, enrollment: string) {
   for (const locale of ['ar', 'en'] as const) {
     const copy = diagrams[locale];
-    for (const theme of ['light', 'dark']) {
+    for (const themeCase of themeCases) {
+      const { colorScheme } = themeCase;
       for (const page of [author, learner]) {
-        await page.context().addCookies([{ name: 'academy-theme', value: theme, url: origin }]);
+        await applyTheme(page, themeCase);
         await page.setViewportSize({ width: 320, height: 900 });
       }
       await author.goto(`/${locale}/question-bank`);
       await author.getByRole('button', { name: bankPrompts[locale].bug }).click();
       await expect(author.getByLabel(assessmentCopy(locale).snippet)).toHaveCSS('direction', 'ltr');
-      await noPageOverflow(author, locale, theme, 320);
-      await noPageOverflow(author, locale, theme, 1280);
+      await noPageOverflow(author, locale, colorScheme, 320);
+      await noPageOverflow(author, locale, colorScheme, 1280);
       await author.getByRole('button', { name: bankPrompts[locale].cli }).click();
       await expect(author.getByLabel(assessmentCopy(locale).expected)).toHaveCSS('direction', 'ltr');
 
@@ -90,8 +92,8 @@ async function reviewLayouts(author: Page, learner: Page, draft: string, enrollm
       await author.goto(`/${locale}/builder?id=${draft}`);
       await author.getByText(builderCopy(locale).preview, { exact: true }).click();
       await expect(author.getByRole('img', { name: copy.title })).toBeVisible();
-      await noPageOverflow(author, locale, theme, 320);
-      await noPageOverflow(author, locale, theme, 1280);
+      await noPageOverflow(author, locale, colorScheme, 320);
+      await noPageOverflow(author, locale, colorScheme, 1280);
 
       await learner.goto(`/${locale}/learning?id=${enrollment}`);
       const image = learner.getByRole('img', { name: copy.title });
@@ -103,7 +105,7 @@ async function reviewLayouts(author: Page, learner: Page, draft: string, enrollm
       await expect(canvas).toHaveCSS('direction', 'ltr');
       await expect(learner.locator('main .snippet-lines')).toHaveCSS('direction', 'ltr');
       await expect(learner.getByLabel(assessmentCopy(locale).command)).toHaveCSS('direction', 'ltr');
-      await noPageOverflow(learner, locale, theme, 320);
+      await noPageOverflow(learner, locale, colorScheme, 320);
       await learner.getByRole('button', { name: copy.zoom }).click();
       await expect(image).toHaveAttribute('style', /125%/);
       await canvas.focus();
@@ -111,7 +113,7 @@ async function reviewLayouts(author: Page, learner: Page, draft: string, enrollm
       await expect.poll(() => canvas.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
       await learner.getByRole('button', { name: copy.reset }).click();
       await expect(image).toHaveAttribute('style', /100%/);
-      await noPageOverflow(learner, locale, theme, 1280);
+      await noPageOverflow(learner, locale, colorScheme, 1280);
     }
   }
 }

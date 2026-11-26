@@ -1,3 +1,4 @@
+import { readLimitedJson } from '../../lib/limited-json';
 import { z } from 'zod';
 import { studentLabCommand } from '../../db/real-lab';
 import { AuthorizationError } from '../identity/policy';
@@ -59,7 +60,7 @@ async function openWorkspace(target: URL, token: string, input: Extract<LabReque
     body: JSON.stringify({ grant, upstream }),
   });
   if (!result.ok) throw new RealLabError(result.status === 403 || result.status === 409 ? 409 : 503);
-  return (input.operation === 'preview' ? previewOutput : configOutput).parse(await result.json());
+  return (input.operation === 'preview' ? previewOutput : configOutput).parse(await readLimitedJson(result, 4096));
 }
 
 export async function changeRealLab(input: LabRequest, token: string) {

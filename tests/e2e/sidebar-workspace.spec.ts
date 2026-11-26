@@ -1,3 +1,4 @@
+import { applyTheme, themeCases, type ThemeCase } from './theme-cases';
 import { expect, test, type Page } from '@playwright/test';
 import { assessmentCopy } from '../../src/features/assessment/copy';
 import { builderCopy } from '../../src/features/authoring/copy';
@@ -9,7 +10,6 @@ import { createTestLearner } from './test-accounts';
 
 const origin = 'http://127.0.0.1:3100';
 const locales = ['en', 'ar'] as const;
-const themes = ['light', 'dark'] as const;
 const viewports = [
   { width: 390, height: 844 },
   { width: 1280, height: 800 },
@@ -34,11 +34,11 @@ async function withoutOverflow(page: Page, width: number) {
   await expect.poll(() => utilities.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
 }
 
-async function checkShell(page: Page, locale: Locale, theme: typeof themes[number], width: number) {
+async function checkShell(page: Page, locale: Locale, { theme, colorScheme }: ThemeCase, width: number) {
   const t = copy(locale);
   await page.evaluate(async () => { await document.fonts.ready; });
   await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
-  await expect(page.locator('html')).toHaveCSS('color-scheme', theme);
+  await expect(page.locator('html')).toHaveCSS('color-scheme', colorScheme);
   await expect(page.getByRole('link', { name: 'Azaly LMS', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: t('language'), exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: t(theme), exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -64,8 +64,8 @@ test('workspace utilities stay in one row and the mobile drawer mirrors and rest
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const locale of locales) {
     const t = copy(locale);
-    for (const theme of themes) {
-      await page.context().addCookies([{ name: 'academy-theme', value: theme, url: origin }]);
+    for (const theme of themeCases) {
+      await applyTheme(page, theme);
       await page.goto(`/${locale}`);
       for (const viewport of viewports) {
         await page.setViewportSize(viewport);
@@ -112,8 +112,8 @@ test('authenticated workspace keeps role links, authoring tabs and profile reada
       const t = copy(locale);
       const account = identityCopy(locale);
       const builder = builderCopy(locale);
-      for (const theme of themes) {
-        await page.context().addCookies([{ name: 'academy-theme', value: theme, url: origin }]);
+      for (const theme of themeCases) {
+        await applyTheme(page, theme);
         for (const route of ['dashboard', 'profile', 'builder', 'question-bank', 'guided-reviews', 'courses', 'admin/users']) {
           await page.goto(`/${locale}/${route}`);
           for (const viewport of viewports) {

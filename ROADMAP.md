@@ -13,5 +13,6 @@
 | 8 (`v0.7.0`) | Mermaid lesson diagrams, `find_bug` and `cli_recall` questions, and the Deterministic Markdown/ZIP Importer |
 | 9 (`v0.8.0`) | Cross-Track Knowledge Graph & Mastery Analytics |
 | 10 (`v0.9.0`) | Server-Side AI Mock Technical Interviewer |
+| 11 (`v1.0.0`) | Production Readiness, Security & Release Hardening |
 
 Restore, monitoring, load and security checks remain prerequisites for external enrollment.

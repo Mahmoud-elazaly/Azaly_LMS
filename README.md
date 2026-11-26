@@ -118,7 +118,7 @@ The migration runner must be able to create a PostgreSQL role. The Compose datab
 
 ## Reverse proxy and operations
 
-Run the web service behind a trusted TLS reverse proxy on the same host. Preserve the original host and set `X-Forwarded-Proto` from the incoming request protocol. The database stays on an internal network. Initialization scripts run only for a fresh volume. Back up existing databases before changing roles, credentials or schema, and apply new migrations before routing traffic to updated web containers.
+Run the web service behind a trusted TLS reverse proxy on the same host. Preserve the original host and set `X-Forwarded-Proto` from the incoming request protocol. The database stays on an internal network. Initialization scripts run only for a fresh volume. Back up existing databases before changing roles, credentials or schema, and apply new migrations before routing traffic to updated web containers. Keep proxy access logs free of request bodies, headers containing credentials, and private query strings.
 
 ## Scope
 
@@ -144,7 +144,7 @@ Better Auth 1.7.27 requires Drizzle ORM 0.45.2 or later on the stable 0.45 line.
 
 ### Configure authentication and initialize the Owner
 
-Set `BETTER_AUTH_URL` to the public HTTPS origin (or the exact loopback origin used in the browser for local testing). Set `BETTER_AUTH_SECRET` to a persistent random value generated with `openssl rand -hex 32`. Keep these values in the ignored `.env`. For HTTPS, configure the trusted reverse proxy to replace `X-Academy-Client-IP` with the actual client IP and prevent direct public access to the app port. Requests without that header share a loopback rate-limit bucket. Better Auth applies sign-in limits per web process. Invitation activation and management limits are stored in PostgreSQL.
+Set `BETTER_AUTH_URL` to the public HTTPS origin (or the exact loopback origin used in the browser for local testing). Set `BETTER_AUTH_SECRET` to a persistent random value generated with `openssl rand -hex 32`. Keep these values in the ignored `.env`. For HTTPS, configure the trusted reverse proxy to replace `X-Academy-Client-IP` with the actual client IP and prevent direct public access to the app port. Requests without that header share a loopback rate-limit bucket. Better Auth applies the address-based sign-in limit per web process. Starting in `v1.0.0`, sign-in also has a shared PostgreSQL budget of 20 requests per email identifier per minute. The application keys this budget with an HMAC using the deployment secret. Invitation activation and account management keep their PostgreSQL limits.
 
 After applying migrations, provision the least-privilege login and bootstrap the Owner through the migration image. The example uses `academy-dev`. Select the intended project before running the commands.
 

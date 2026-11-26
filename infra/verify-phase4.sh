@@ -18,6 +18,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
   if [[ "${PHASE8_TEST:-}" == 1 ]]; then source infra/verify-phase8-support.sh; fi
   if [[ "${PHASE9_TEST:-}" == 1 ]]; then source infra/verify-phase9-support.sh; prefix=academy-phase9; fi
   if [[ "${PHASE10_TEST:-}" == 1 ]]; then source infra/verify-phase10-support.sh; fi
+  if [[ "${PHASE11_TEST:-}" == 1 ]]; then source infra/verify-phase11-support.sh; fi
   project="$prefix-$(openssl rand -hex 6)"
   container="$project-web"
   dc() { docker compose -p "$project" "${compose_files[@]}" "$@"; }
@@ -115,6 +116,9 @@ JS
   if [[ "${PHASE10_TEST:-}" == 1 ]]; then
     dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase10-permissions.sql
   fi
+  if [[ "${PHASE11_TEST:-}" == 1 ]]; then
+    dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase11-permissions.sql
+  fi
   dc run -d --no-deps --name "$container" web
   wait_for_app() {
     local attempt
@@ -131,8 +135,21 @@ JS
   docker restart "$container"
   wait_for_app
   docker exec -i -e AUTH_TEST_OWNER_PASSWORD "$container" node --input-type=module - after-restart < tests/integration/auth-smoke.mjs
+  if [[ "${PHASE11_TEST:-}" == 1 ]]; then
+    docker exec -i -e AUTH_TEST_OWNER_PASSWORD "$container" node --input-type=module - < tests/integration/production-cookie.mjs
+  fi
   dc --profile test run --name "$project-browser" --build browser sh -eu -c '
-    pnpm build
+    if [ "${PHASE11_TEST:-}" = 1 ]; then
+      GEMINI_API_KEY=academy-build-gemini-canary BETTER_AUTH_SECRET=academy-build-auth-secret-canary pnpm build
+      test -d .next/static
+      if grep -rqlE "academy-build-(gemini|auth-secret)-canary|GEMINI_API_KEY|BETTER_AUTH_SECRET|x-goog-api-key" .next/static; then
+        echo "Server credential material found in browser assets."
+        exit 1
+      fi
+      echo "Browser credential isolation check passed."
+    else
+      pnpm build
+    fi
     pnpm exec playwright test tests/e2e/identity.spec.ts tests/e2e/public.spec.ts
     pnpm exec playwright test tests/e2e/course-builder.spec.ts
     pnpm exec playwright test tests/e2e/learning.spec.ts
@@ -162,6 +179,9 @@ JS
     dc --profile test run --name "$project-browser" browser sh -eu -c '
       pnpm build
       pnpm exec playwright test tests/e2e/phase10.spec.ts
+      if [ "${PHASE11_TEST:-}" = 1 ]; then
+        pnpm exec playwright test tests/e2e/production-boundaries.spec.ts
+      fi
     '
     docker rm "$project-browser" >/dev/null
   fi

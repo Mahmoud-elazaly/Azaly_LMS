@@ -15,7 +15,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Publish the package version if untagged
+      - name: Publish or resume the package release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -39,12 +39,22 @@ jobs:
           TAG="v${VERSION}"
           TAG_REF="refs/tags/${TAG}"
           if git show-ref --verify --quiet "$TAG_REF"; then
-            printf 'Tag %s already exists.\n' "$TAG"
-            exit 0
+            if [[ "$(git cat-file -t "$TAG_REF")" != tag ]]; then
+              printf '::error::Release tag %s must be annotated.\n' "$TAG"
+              exit 1
+            fi
+            if draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"; then
+              if [[ "$draft" != false ]]; then
+                printf '::error::Release %s is a draft and requires review.\n' "$TAG"
+                exit 1
+              fi
+              printf 'Release %s is already published.\n' "$TAG"
+              exit 0
+            fi
+          else
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              tag --annotate "$TAG" "$GITHUB_SHA" --message "Release $TAG"
+            git push origin "$TAG_REF"
           fi
-
-          git -c user.name='github-actions[bot]' \
-            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            tag --annotate "$TAG" "$GITHUB_SHA" --message "Release $TAG"
-          git push origin "$TAG_REF"
           gh release create "$TAG" --verify-tag --title "Release $TAG" --generate-notes
