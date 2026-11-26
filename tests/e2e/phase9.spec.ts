@@ -1,3 +1,4 @@
+import { applyTheme, themeCases } from './theme-cases';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { courseDocument } from '../../src/features/curriculum/prometheus-grafana/course';
 import { guidedCopy } from '../../src/features/guided/copy';
@@ -34,8 +35,9 @@ async function mastery(request: APIRequestContext) {
 async function checkLayouts(page: Page) {
   for (const locale of ['ar', 'en'] as const) {
     const labels = masteryCopy(locale);
-    for (const theme of ['light', 'dark'] as const) {
-      await page.context().addCookies([{ name: 'academy-theme', value: theme, url: origin }]);
+    for (const themeCase of themeCases) {
+      const { theme, colorScheme } = themeCase;
+      await applyTheme(page, themeCase);
       for (const [route, heading] of [['knowledge-graph', labels.graph], ['mastery', labels.mastery]] as const) {
         await page.goto(`/${locale}/${route}`);
         await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
@@ -44,7 +46,7 @@ async function checkLayouts(page: Page) {
           await page.setViewportSize(size);
           await page.evaluate(async () => { await document.fonts.ready; });
           await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
-          await expect(page.locator('html')).toHaveCSS('color-scheme', theme);
+          await expect(page.locator('html')).toHaveCSS('color-scheme', colorScheme);
           if (route === 'knowledge-graph') {
             await expect(page.getByRole('group', { name: labels.graphCanvas })).toHaveAttribute('dir', 'ltr');
             await expect(page.getByRole('combobox', { name: labels.relation })).toBeVisible();

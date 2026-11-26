@@ -1,3 +1,4 @@
+import { applyTheme, themeCases } from './theme-cases';
 import { randomUUID } from 'node:crypto';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { capturedInvitation, createTestLearner } from './test-accounts';
@@ -132,14 +133,24 @@ async function verifyLabViewport(page: Page, locale: 'ar' | 'en') {
   }
 }
 
+async function verifySystemLabTheme(page: Page, locale: 'ar' | 'en', name: string) {
+  await page.getByRole('button', { name, exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
+  for (const colorScheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme });
+    await expect(page.locator('html')).toHaveCSS('color-scheme', colorScheme);
+    await verifyLabViewport(page, locale);
+  }
+}
+
 async function verifyStaffLayouts(page: Page, courseId: string) {
   for (const locale of ['en', 'ar'] as const) {
-    for (const theme of ['light', 'dark']) {
-      await page.context().addCookies([{ name: 'academy-theme', value: theme, url: origin }]);
+    for (const theme of themeCases) {
+      await applyTheme(page, theme);
       for (const route of ['question-bank', `builder?id=${courseId}`, 'guided-reviews']) {
         await page.goto(`/${locale}/${route}`);
         await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
-        await expect(page.locator('html')).toHaveCSS('color-scheme', theme);
+        await expect(page.locator('html')).toHaveCSS('color-scheme', theme.colorScheme);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
         await expect(page.locator('main').getByRole('alert')).toHaveCount(0);
         for (const width of [320, 1280]) {
@@ -217,6 +228,7 @@ test.describe('reusable assessments and Guided Labs', () => {
       await page.getByRole('button', { name: 'داكن', exact: true }).click();
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
       await verifyLabViewport(page, 'ar');
+      await verifySystemLabTheme(page, 'ar', 'حسب النظام');
       await page.getByRole('checkbox', { name: 'افتح الملف' }).check();
       await page.getByLabel('الدليل (اختياري)').fill(evidence);
       await page.getByRole('button', { name: 'حفظ تقدّم المختبر' }).click();
@@ -237,6 +249,7 @@ test.describe('reusable assessments and Guided Labs', () => {
       await secondDevice.getByRole('button', { name: 'Dark', exact: true }).click();
       await expect(secondDevice.locator('html')).toHaveAttribute('data-theme', 'dark');
       await verifyLabViewport(secondDevice, 'en');
+      await verifySystemLabTheme(secondDevice, 'en', 'System');
       await expect(secondDevice.getByText('Self-reported', { exact: true })).toBeVisible();
       await expect(secondDevice.getByText(evidence)).toBeVisible();
       await secondDevice.getByRole('radio', { name: 'Config file' }).check();

@@ -1,3 +1,4 @@
+import { readRequestJson } from '@/lib/limited-json';
 import { authorRoles } from '@/features/authoring/policy';
 import { AuthoringError } from '@/features/authoring/service';
 import { guidedReview } from '@/features/guided/policy';
@@ -17,7 +18,7 @@ export function GET(request: Request) {
 
 export function POST(request: Request) {
   return contentResponse(request, authorRoles, async () => {
-    const input = guidedReview.safeParse(await request.json().catch(() => null));
+    const input = guidedReview.safeParse(await readRequestJson(request, 16 * 1024));
     if (!input.success) throw new AuthoringError(400);
     return recordGuidedReview(reviewLocale(request), input.data, request.headers);
   });

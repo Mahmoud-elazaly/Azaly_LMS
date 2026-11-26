@@ -1,3 +1,5 @@
+import { themeCases } from './theme-cases';
+import { copy as interfaceCopy } from '../../src/i18n/messages';
 import { randomUUID } from 'node:crypto';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { Pool } from 'pg';
@@ -27,12 +29,14 @@ async function currentAttempt(page: Page): Promise<LabAttempt> {
 async function layoutMatrix(page: Page) {
   for (const locale of ['ar', 'en'] as const) {
     const copy = realLabCopy(locale);
-    for (const theme of ['light', 'dark']) {
-      await page.context().addCookies([{ name: 'academy-theme', value: theme, url: origin }]);
-      await page.goto(`/${locale}/real-lab`);
+    await page.goto(`/${locale}/real-lab`);
+    for (const { theme, colorScheme } of themeCases) {
+      await page.emulateMedia({ colorScheme });
+      await page.getByRole('button', { name: interfaceCopy(locale)(theme), exact: true }).click();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.title);
       await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
-      await expect(page.locator('html')).toHaveCSS('color-scheme', theme);
+      await expect(page.locator('html')).toHaveCSS('color-scheme', colorScheme);
       for (const width of [320, 1280]) {
         await page.setViewportSize({ width, height: 850 });
         const editor = page.getByRole('textbox', { name: copy.directive });

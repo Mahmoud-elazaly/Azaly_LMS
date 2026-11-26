@@ -1,3 +1,4 @@
+import { readLimitedJson } from '../../lib/limited-json';
 import { z } from 'zod';
 import type { Locale } from '../../i18n/locales';
 
@@ -38,7 +39,7 @@ export function invitationMailer() {
         cache: 'no-store',
         signal: AbortSignal.timeout(8000),
       });
-      return response.ok && accepted.safeParse(await response.json()).success;
+      return response.ok && accepted.safeParse(await readLimitedJson(response, 16 * 1024)).success;
     } catch {
       return false;
     }

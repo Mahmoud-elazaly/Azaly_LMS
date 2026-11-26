@@ -20,3 +20,7 @@ export async function readLimitedJson(message: Request | Response, maxBytes: num
     reader.releaseLock();
   }
 }
+
+export function readRequestJson(request: Request, maxBytes: number): Promise<unknown> {
+  return readLimitedJson(request, maxBytes).catch(() => null);
+}

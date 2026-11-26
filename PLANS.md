@@ -443,3 +443,31 @@ Ran UI/UX Pro Max for `'online course' --domain product --rtl`, `'technical inte
 | Browser asset scan | Searched the standalone build’s `.next/static` bundle for the Gemini environment variable, credential header, and test credential. None appeared in client assets. |
 | Cumulative `bash infra/verify.sh` on WSL2 | Exited 0 in `academy-phase9-5594ace51b36` with lint, TypeScript, production builds, 57 Vitest tests, 22 Chromium tests, nine PostgreSQL permission suites, and four historical upgrade rehearsals. Closed registration, the Prometheus and Grafana practice stack, and the NGINX isolation, reconciliation, and offline expiry checks passed. The final interview browser build included the contrast correction. A temporary local Compose overlay supplied registry and Debian host mappings for Docker builds to work around WSL DNS. Log at `test-results/azaly-phase10-verify.log`. |
 | Source preservation | Compared both original HTML files, the architecture blueprint, migration SQL through `0010`, the lockfile, and GitHub workflows to `v0.8.0`. Their contents matched. `git diff --cached --check` passed. |
+
+## Application handover refresh
+
+On 2026-11-26, refreshed [CODEX_HANDOFF.md](CODEX_HANDOFF.md) for the software architect, software lead, and orchestrator using the released Phase 10 baseline. Added the maintenance rule to [AGENTS.md](AGENTS.md#maintaining-the-handover).
+
+| Check | Observed result |
+| --- | --- |
+| Documentation checks | `git diff --check` passed. A Python check resolved 78 repository-relative links, heading anchors, and feature paths across the handover and agent instructions. |
+| Read-only development smoke | Queried the local HTTP routes and counted the applied Drizzle migrations. The database had 12 applied migrations. Health, readiness, and both locale pages returned HTTP 200, with footer `0.9.0` in both locales. Direct email registration returned 404 and guest interview history returned 401. The Gemini key remains unset in development. |
+
+## Phase 11 — Production Readiness, Security & Release Hardening
+
+Started `release/v1.0.0` from the synced `v0.9.0` release at `dc3193b` and carried forward the local handover commit `7392074`. Reviewed the Hybrid Architecture MVP blueprint, handover, roadmap, data model, threat model, acceptance criteria and lab architecture before implementation. `package.json` is set to `1.0.0`.
+
+| Check | Observed result |
+| --- | --- |
+| Baseline SQL audit | PostgreSQL catalog inspection found six identity definer routines owned by the migration login. Each already used `search_path = pg_catalog` and excluded PUBLIC execution. |
+| SQL preflight | Applied migrations through `0012_identity_definer_hardening` to an isolated Compose database and ran `tests/integration/phase11-permissions.sql`. The role, owner, search-path and ACL check passed. Log at `test-results/azaly-phase11-sql-preflight.log`. |
+| Code preflight | `next typegen`, `tsc --noEmit`, ESLint and all 60 Vitest tests passed in the cached development image. Log at `test-results/azaly-phase11-code-preflight.log`. |
+| Release retry rehearsal | Executed the workflow's Bash step with a disposable bare Git origin and a controlled GitHub CLI stand-in. The first publish stopped after tag push, the next invocation published the existing annotated tag, and the third invocation exited successfully without recreating the release. Log at `test-results/azaly-phase11-release-preflight.log`. |
+| Host interruption | WSL restarted while the first full gate and the focused browser build were running. Their logs end during build, and neither run produced a final result. Restarted the full gate against a fresh isolated project and retained the previous test database volume. |
+| First cumulative retry | Replayed `v0.9.0`, passed the expanded SQL checks and HTTPS-origin cookie check, and passed the first browser suites. Phase 5 caught the registration trigger rejecting an Instructor invitation under the new definer. Migration `0012` now permits staff insertion by that scoped owner and retains the active-Owner guard. Added rollback-only checks for assigned role and one-use activation. Log at `test-results/azaly-phase11-verify-resumed.log`. |
+| Focused production-boundary check | Built the standalone app after the trigger correction. The SQL checks, HTTPS-cookie check, and three Chromium tests passed. The browser exercised a denied impersonated session, bounded request parsing, the shared sign-in limit, and the mock interview journey across both locale directions and System preferences. Log at `test-results/azaly-phase11-focused.log`. |
+| Drizzle and documentation consistency | A scratch `pnpm db:generate --name=phase11_consistency` reported no pending schema changes. The docs check resolved 55 relative links and anchors. `git diff --check` passed. |
+| Real Lab layout preflight | The next cumulative run passed Phase 5, then the expanded Phase 7 theme loop hit the existing gateway quota of 20 grants per 30 seconds. The loop now switches theme in the open workspace and retains the preview, keyboard, layout and lifecycle assertions. Log at `test-results/azaly-phase11-verify-final.log`. |
+| Focused Real Lab regression | A fresh disposable stack passed `playwright test tests/e2e/phase7.spec.ts`. Chromium switched all four theme cases in place, checked LTR technical fields and preview, and completed the protected lab lifecycle. Log at `test-results/azaly-phase11-lab-focused.log`. |
+| Final cumulative `bash infra/verify.sh` | Exited 0 in `academy-phase9-336e9abc881e`. Passed lint, type checking, production builds, 60 Vitest tests, 24 Chromium tests, 10 PostgreSQL permission suites, and five historical upgrade rehearsals. HTTPS-configured cookies, the browser credential scan, closed registration, both locale directions in Light, Dark, and System, the Prometheus practice stack, and NGINX isolation, reconciliation, and cleanup passed. Local Docker builds used a temporary build-only DNS overlay. Log at `test-results/azaly-phase11-verify-complete.log`. |
+| Source preservation | Compared migration SQL through `0011`, the lockfile, and the original HTML files to `v0.9.0`. Their contents matched. The required GitHub status remains `verify`. |

@@ -1,3 +1,4 @@
+import { readRequestJson } from '@/lib/limited-json';
 import { z } from 'zod';
 import { authorRoles, mutationSchema } from '@/features/authoring/policy';
 import { AuthoringError, changeDraft, listCourses, readDraft } from '@/features/authoring/service';
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   try {
     await requireRole(authorRoles, request.headers);
     if (request.headers.get('origin') !== getAuth().origin) throw new AuthorizationError(403);
-    const parsed = mutationSchema.safeParse(await request.json().catch(() => null));
+    const parsed = mutationSchema.safeParse(await readRequestJson(request, 3 * 1024 * 1024));
     if (!parsed.success) throw new AuthoringError(400);
     return Response.json(await changeDraft(parsed.data, request.headers), { headers });
   } catch (error) {

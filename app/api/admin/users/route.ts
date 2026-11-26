@@ -1,3 +1,5 @@
+import { getAuth } from '@/features/identity/auth';
+import { readRequestJson } from '@/lib/limited-json';
 import { reportAuthFailure } from '@/features/identity/diagnostics';
 import { directoryFilters, managementInput } from '@/features/identity/directory';
 import { AccountOperationError, listUsers, managers, manageUser } from '@/features/identity/management';
@@ -26,7 +28,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     await requireRole(managers, request.headers);
-    const input = managementInput.safeParse(await request.json().catch(() => null));
+    if (request.headers.get('origin') !== getAuth().origin) throw new AuthorizationError(403);
+    const input = managementInput.safeParse(await readRequestJson(request, 4096));
     if (!input.success) return Response.json({ error: 'INVALID_INPUT' }, { status: 400, headers });
     const result = await manageUser(input.data, request.headers);
     return Response.json(result, { status: 'delivery' in result && result.delivery === 'failed' ? 202 : 200, headers });

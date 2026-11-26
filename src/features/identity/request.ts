@@ -1,3 +1,5 @@
+import { createHmac } from 'node:crypto';
+import { readRequestJson } from '../../lib/limited-json';
 import { isIP } from 'node:net';
 import { z } from 'zod';
 import { passwordMaximum } from './directory';
@@ -20,7 +22,7 @@ export async function prepareAuthRequest(request: Request, path: string): Promis
 
   let body: string | undefined;
   if (path === '/api/auth/sign-in/email') {
-    const input = credentials.safeParse(await request.json().catch(() => null));
+    const input = credentials.safeParse(await readRequestJson(request, 4096));
     if (!input.success) return null;
     headers.set('Content-Type', 'application/json');
     body = JSON.stringify(input.data);
@@ -29,4 +31,8 @@ export async function prepareAuthRequest(request: Request, path: string): Promis
   // Next.js can proxy the incoming request. Node 24's Request constructor
   // accesses private slots when given a Request object, which a Proxy lacks.
   return new Request(request.url, { method: request.method, headers, body, signal: request.signal });
+}
+
+export function signInRateBucket(secret: string, email: string) {
+  return createHmac('sha256', secret).update(`sign-in:${email.toLowerCase()}`).digest('hex');
 }

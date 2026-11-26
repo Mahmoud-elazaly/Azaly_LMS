@@ -1,3 +1,4 @@
+import { readRequestJson } from '@/lib/limited-json';
 import { z } from 'zod';
 import { getAuth } from '@/features/identity/auth';
 import { AuthorizationError } from '@/features/identity/policy';
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
   try {
     await requireRole(studentRoles, request.headers);
     if (request.headers.get('origin') !== getAuth().origin) throw new AuthorizationError(403);
-    const parsed = learnerInput.safeParse(await request.json().catch(() => null));
+    const parsed = learnerInput.safeParse(await readRequestJson(request, 128 * 1024));
     if (!parsed.success) throw new LearningError(400);
     return Response.json(await changeLearning(parsed.data, request.headers), { headers });
   } catch (error) {

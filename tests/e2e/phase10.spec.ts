@@ -1,3 +1,4 @@
+import { applyTheme, themeCases } from './theme-cases';
 import { expect, test, type APIRequestContext } from '@playwright/test';
 import { interviewCopy } from '../../src/features/interview/copy';
 import { masteryCopy } from '../../src/features/mastery/copy';
@@ -119,15 +120,16 @@ test('persists a scoped interview and updates only the owner’s mastery and pra
 
     for (const locale of ['ar', 'en'] as const) {
       const labels = interviewCopy(locale);
-      for (const theme of ['light', 'dark']) {
-        await page.context().addCookies([{ name: 'academy-theme', value: theme, url: origin }]);
+      for (const themeCase of themeCases) {
+        const { theme, colorScheme } = themeCase;
+        await applyTheme(page, themeCase);
         await page.goto(`/${locale}/interview`);
         for (const size of sizes) {
           await page.setViewportSize(size);
           await page.evaluate(async () => { await document.fonts.ready; });
           const root = page.locator('html');
           await expect(root).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
-          await expect(root).toHaveCSS('color-scheme', theme);
+          await expect(root).toHaveCSS('color-scheme', colorScheme);
           await expect(page.getByRole('heading', { name: labels.setup })).toBeVisible();
           expect(await root.evaluate((node) => node.scrollWidth), `${locale} ${theme} setup ${size.width}`).toBeLessThanOrEqual(size.width);
         }
