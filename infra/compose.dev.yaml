@@ -12,6 +12,7 @@ services:
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       INVITATION_MAIL_API_KEY: ${INVITATION_MAIL_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       INVITATION_MAIL_FROM: ${INVITATION_MAIL_FROM:-}
       INVITATION_MAIL_URL: ${INVITATION_MAIL_URL:-https://api.resend.com/emails}
     depends_on:
@@ -46,6 +47,7 @@ services:
       PHASE7_TEST: ${PHASE7_TEST:-}
       PHASE8_TEST: ${PHASE8_TEST:-}
       PHASE9_TEST: ${PHASE9_TEST:-}
+      PHASE10_TEST: ${PHASE10_TEST:-}
       AUTH_TEST_OWNER_PASSWORD: ${AUTH_TEST_OWNER_PASSWORD:-}
     depends_on:
       postgres:

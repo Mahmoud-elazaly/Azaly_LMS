@@ -65,3 +65,11 @@ Run `bash infra/verify.sh` for the cumulative Phase 1–9 gate. `bash infra/veri
 - Check both learner routes in Arabic and English, Light and Dark, at 390×844, 1280×800, and 1440×900. Verify page reflow, accessible filters, the six-domain radar text key, and LTR graph geometry within the mirrored Arabic shell.
 
 [Observed Phase 9 results](PLANS.md#phase-9--cross-track-knowledge-graph-and-mastery)
+
+## Phase 10 mock interviewer
+
+`bash infra/verify.sh` runs the cumulative gate through `infra/verify-phase10.sh`. It rehearses the upgrade from `v0.8.0`, applies and replays migration `0011_mock_interviews`, and compares the historical fixture and ontology fingerprints.
+
+- Unit checks cover strict Zod output validation, scoped grounding, supplemental labels, request size and turn validation, provider caps and error handling, and interview evidence in mastery.
+- PostgreSQL checks verify private table grants and routine ownership, expired and staff session refusal, cross-user isolation, published lesson projection, concurrent and stale reservations, and per-learner rate and session budget enforcement.
+- Chromium drives the full flow through the loopback Gemini stub, including a malformed scorecard followed by recovery, persisted history, another learner’s isolated view, and Knowledge Graph and Weakest Concepts updates. It checks keyboard focus and the Arabic and English setup and scorecard in Light and Dark at 390×844, 1280×800 and 1440×900. [Observed gate results](PLANS.md#phase-10--server-side-ai-mock-technical-interviewer)

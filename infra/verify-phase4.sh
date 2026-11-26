@@ -17,6 +17,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
   fi
   if [[ "${PHASE8_TEST:-}" == 1 ]]; then source infra/verify-phase8-support.sh; fi
   if [[ "${PHASE9_TEST:-}" == 1 ]]; then source infra/verify-phase9-support.sh; prefix=academy-phase9; fi
+  if [[ "${PHASE10_TEST:-}" == 1 ]]; then source infra/verify-phase10-support.sh; fi
   project="$prefix-$(openssl rand -hex 6)"
   container="$project-web"
   dc() { docker compose -p "$project" "${compose_files[@]}" "$@"; }
@@ -111,6 +112,9 @@ JS
   if [[ "${PHASE9_TEST:-}" == 1 ]]; then
     dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase9-permissions.sql
   fi
+  if [[ "${PHASE10_TEST:-}" == 1 ]]; then
+    dc exec -T postgres psql -X -v ON_ERROR_STOP=1 -U academy -d academy < tests/integration/phase10-permissions.sql
+  fi
   dc run -d --no-deps --name "$container" web
   wait_for_app() {
     local attempt
@@ -151,6 +155,13 @@ JS
     dc --profile test run --name "$project-browser" browser sh -eu -c '
       pnpm build
       pnpm exec playwright test tests/e2e/phase9.spec.ts
+    '
+    docker rm "$project-browser" >/dev/null
+  fi
+  if [[ "${PHASE10_TEST:-}" == 1 ]]; then
+    dc --profile test run --name "$project-browser" browser sh -eu -c '
+      pnpm build
+      pnpm exec playwright test tests/e2e/phase10.spec.ts
     '
     docker rm "$project-browser" >/dev/null
   fi

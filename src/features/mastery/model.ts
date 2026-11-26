@@ -19,15 +19,16 @@ export type Material =
   | { kind: 'real'; id: string; provenance: 'SYSTEM_VERIFIED' | null };
 
 export type ConceptEvidence = { slug: string; track: Track; titles: LocalizedText; summaries: LocalizedText; items: Material[] };
-export type Evidence = { concepts: ConceptEvidence[]; edges: Edge[] };
+export type Evidence = { concepts: ConceptEvidence[]; edges: Edge[]; interviews?: Record<string, number> };
 export type MasteryStatus = 'notStarted' | 'inProgress' | 'mastered' | 'needsRemediation';
 export type Signal = { credit: number; possible: number };
 export type MasteryBreakdown = {
+  interview?: Signal;
   lessons: Signal;
   quizzes: Signal & { attempted: number };
   labs: Signal & { incomplete: number };
 };
 export type MasteryConcept = ConceptEvidence & { score: number | null; status: MasteryStatus; breakdown: MasteryBreakdown };
 export type TrackProgress = { track: Track; score: number | null; mastered: number; assessed: number };
-export type Remediation = { slug: string; score: number; track: Track; titles: LocalizedText; action: Material };
+export type Remediation = { slug: string; score: number; track: Track; titles: LocalizedText; action: Material | { kind: 'concept' } };
 export type MasterySnapshot = { concepts: MasteryConcept[]; edges: Edge[]; tracks: TrackProgress[]; weakest: Remediation[] };

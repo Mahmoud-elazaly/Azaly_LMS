@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { interviewCopy } from '@/features/interview/copy';
 import { masteryCopy } from '@/features/mastery/copy';
 import { graphLayout, nodeHeight, nodeWidth } from '@/features/mastery/graph-layout';
 import { relations, tracks, type Edge, type MasteryConcept } from '@/features/mastery/model';
@@ -168,6 +169,8 @@ function ConceptDetails({ concept, concepts, edges, locale, labsEnabled }: {
         <div><dt>{t.lessons}</dt><dd>{format(lessons.credit, lessons.possible)}</dd></div>
         <div><dt>{t.quizzes}</dt><dd>{format(quizzes.credit, quizzes.attempted)}</dd></div>
         <div><dt>{t.labs}</dt><dd>{format(labs.credit, labs.possible)}</dd></div>
+        {concept.breakdown.interview && <div><dt>{interviewCopy(locale).nav}</dt>
+          <dd><bdi>{percent.format(concept.breakdown.interview.credit / 100)}</bdi></dd></div>}
       </dl>
       <small>{t.fromLatest}</small>
     </section>

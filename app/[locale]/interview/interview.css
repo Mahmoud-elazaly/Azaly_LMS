@@ -1,0 +1,124 @@
+.interview-page {
+  display: grid;
+  gap: 1.25rem;
+  max-inline-size: 86rem;
+  overflow-wrap: anywhere;
+}
+.interview-page > * + * { margin-block-start: 0; }
+.interview-page > header p { max-inline-size: 60ch; }
+.interview-layout {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1180px) {
+  .interview-layout { grid-template-columns: minmax(0, 1fr) minmax(15rem, 23%); }
+}
+.interview-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-inline-size: 0;
+  padding: clamp(1rem, 2vw, 1.65rem);
+  border: 1px solid var(--line);
+  border-radius: .75rem;
+  background: var(--surface);
+}
+.interview-panel h2 { margin: 0; }
+.interview-panel-header, .interview-actions {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+.interview-panel-header p, .interview-panel form p, .interview-history p, .interview-feedback p { margin: 0; }
+.interview-feedback:has(p:empty:only-child) { margin-block-end: -1.25rem; }
+.interview-feedback [role="alert"] { margin-block: .45rem 0; }
+.interview-panel button, .interview-panel select { min-block-size: 2.75rem; }
+.interview-setup, .interview-answer { display: grid; gap: 1rem; }
+.interview-selects, .interview-tracks, .interview-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: .65rem;
+}
+.interview-selects label { display: grid; gap: .25rem; }
+.interview-panel select, .interview-answer textarea {
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: .55rem .7rem;
+  border: 1px solid var(--control-border);
+  border-radius: .45rem;
+  color: var(--text);
+  background: var(--field);
+  font: inherit;
+}
+.interview-setup fieldset { min-inline-size: 0; padding: 0; border: 0; }
+.interview-setup legend { margin-block-end: .4rem; }
+.interview-tracks label {
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding: .35rem .65rem;
+  border: 1px solid var(--control-border);
+  border-radius: .45rem;
+  cursor: pointer;
+}
+.interview-tracks label:has(input:checked) { background: var(--tint); }
+.interview-tracks input { flex-shrink: 0; }
+.interview-metrics, .interview-history ol, .interview-transcript { padding: 0; margin: 0; }
+.interview-metrics { padding: .7rem .85rem; border-block: 1px solid var(--line); }
+.interview-metrics dt, .interview-history time, .interview-history button > span { color: var(--muted); font-size: .875rem; }
+.interview-metrics dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.interview-transcript, .interview-history ol { display: grid; gap: .65rem; list-style: none; }
+.interview-turn {
+  min-inline-size: 0;
+  padding: .8rem 1rem;
+  border-inline-start: .25rem solid var(--accent);
+  background: var(--surface-raised);
+  border-radius: .45rem;
+}
+.interview-turn[data-speaker="learner"] { border-inline-start-color: var(--control-border); background: transparent; }
+.interview-page :is(h2, h3, li)[tabindex="-1"]:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
+.interview-speaker { font-weight: 750; }
+.interview-text { text-align: start; }
+.interview-text :is(p, pre, ul, ol, blockquote), .interview-turn > p { margin: .3rem 0; }
+.interview-text pre {
+  max-inline-size: 100%;
+  padding: .6rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: start;
+  border-radius: .4rem;
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--line);
+}
+.interview-text code { unicode-bidi: isolate; }
+.interview-text :not(pre) > code {
+  padding-inline: .14em;
+  border-radius: .2rem;
+  color: var(--text);
+  background: var(--tint);
+}
+.interview-answer textarea { resize: vertical; }
+.interview-answer textarea[aria-invalid="true"] { border-color: var(--account-danger); }
+.interview-answer #interview-answer-limit, .interview-setup #interview-disclosure { color: var(--muted); }
+.interview-scorecard { display: grid; gap: .7rem; }
+.interview-scorecard :is(h3, h4) { margin: 0; font-weight: 700; }
+.interview-scorecard h3 { font-size: 1.25rem; }
+.interview-scorecard ul { margin: 0; padding-inline-start: 1.2rem; }
+.interview-scorecard a { display: inline-block; padding-block: .35rem; }
+.interview-history ol button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  white-space: normal;
+  inline-size: 100%;
+  justify-items: start;
+  text-align: start;
+  gap: .15rem;
+  padding: .6rem .7rem;
+}
+.interview-history button[aria-current="true"] { border-color: var(--accent); background: var(--tint); }
