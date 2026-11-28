@@ -1,6 +1,6 @@
 # Azaly LMS application handover
 
-**Reviewed 2026-11-26.** The released baseline is Phase 11, `v1.0.0`, at merge commit `f00e4812eb719503a51aeafa0ff6a061e96d2816`. Azaly LMS is a self-hosted Arabic and English LMS for infrastructure and DevOps training. It ships a public catalog, invitation-only accounts, course authoring, learner progress and assessments, Guided Labs, an isolated NGINX Real Lab pilot, course import, mastery analytics, and mock technical interviews. [Release](https://github.com/Mahmoud-elazaly/Azaly_LMS/releases/tag/v1.0.0) · [Phase 11 PR](https://github.com/Mahmoud-elazaly/Azaly_LMS/pull/10) · [Roadmap](ROADMAP.md)
+**Reviewed 2026-11-28.** The released baseline is Phase 12, `v1.1.0`, at merge commit `41ed76e9423f17175e514459a876c7f3945977d5`. Azaly LMS is a self-hosted Arabic and English LMS for infrastructure and DevOps training. It ships a public catalog, invitation-only accounts, course authoring, learner progress and assessments, Guided Labs, isolated multi-track Real Labs, course import, mastery analytics, and mock technical interviews. [Release](https://github.com/Mahmoud-elazaly/Azaly_LMS/releases/tag/v1.1.0) · [Phase 12 PR](https://github.com/Mahmoud-elazaly/Azaly_LMS/pull/12) · [Roadmap](ROADMAP.md)
 
 ## Where each role starts
 
@@ -19,19 +19,19 @@ Phase 11 sets the package version to `1.0.0` and passed the local cumulative pla
 
 ## Phase 12 multi-track Real Labs
 
-Version `1.1.0` adds the Linux file permissions and Prometheus metrics exposition exercises alongside NGINX. Migration `0013_multi_track_real_labs` adds the template links and enables the new checker pairs in the existing database. The lab bridge and controller must use the updated worker protocol and the controller must use the newly approved sandbox image ID before the updated app enables starts. The operating state below records the most recently verified release. [Lab architecture](LAB_ARCHITECTURE.md#phase-12-multi-track-workspaces) · [Phase 12 evidence](PLANS.md#phase-12--multi-track-real-labs-expansion)
+Version `1.1.0` adds the Linux file permissions and Prometheus metrics exposition exercises alongside NGINX. Migration `0013_multi_track_real_labs` adds the template links and enables the new checker pairs in the existing database. The lab bridge and controller must use the updated worker protocol and the controller must use the newly approved sandbox image ID before the updated app enables starts. [Lab architecture](LAB_ARCHITECTURE.md#phase-12-multi-track-workspaces) · [Phase 12 evidence](PLANS.md#phase-12--multi-track-real-labs-expansion)
 
 ## Release and operating state
 
-| Check | Observed for `v1.0.0` |
+| Check | Observed for `v1.1.0` |
 | --- | --- |
-| Delivery | The feature branch merged through PR #10 after the required `Foundation checks / verify` job passed. The annotated release tag points to the merge commit. |
-| Cumulative gate | `bash infra/verify.sh` exited 0 with 60 unit tests, 24 Chromium tests, ten PostgreSQL permission suites, and five historical upgrade rehearsals. |
-| Local development | `academy-dev` was migrated and rebuilt using the existing Real Lab configuration and the `academy-dev_postgres-data` volume. The migration count rose from 12 to 13. The approved local sandbox image was rebuilt after the host restart. |
-| Smoke checks | On the review date, `/api/health` and `/api/ready` returned HTTP 200. `/ar` and `/en` returned HTTP 200 and showed `1.0.0` in the footer. The release smoke check returned 404 for direct email registration and 401 for interview history without a session. |
+| Delivery | PR #12 merged after the required `Foundation checks / verify` job passed. The annotated release tag points to the merge commit. |
+| Cumulative gate | `bash infra/verify.sh` exited 0 with 65 unit tests, 26 Chromium tests, eleven PostgreSQL permission suites, and six historical upgrade rehearsals. |
+| Local development | Applied migration `0013`, rebuilt the approved lab sandbox, and updated the lab controller, bridge, and app. The original PostgreSQL container and `academy-dev_postgres-data` remained in use. The database has 14 applied migrations. |
+| Smoke checks | `/api/health` and `/api/ready` returned HTTP 200. `/ar` and `/en` returned HTTP 200 and showed `1.1.0` in the footer. Direct registration returned 404 and guest lab access returned 401. |
 | Live interview generation | `GEMINI_API_KEY` is unset on the reviewed development stack. Automated interview verification used the deterministic server-side Gemini stub. |
 
-The local verification used temporary Docker build host mappings for WSL DNS. GitHub CI ran against the pushed revision. [Phase 11 local evidence](PLANS.md#phase-11--production-readiness-security--release-hardening) · [GitHub check](https://github.com/Mahmoud-elazaly/Azaly_LMS/actions/runs/45833072471)
+[Phase 12 gate and deployment evidence](PLANS.md#phase-12--multi-track-real-labs-expansion) · [GitHub check](https://github.com/Mahmoud-elazaly/Azaly_LMS/actions/runs/46091580033)
 
 ## System boundaries
 
