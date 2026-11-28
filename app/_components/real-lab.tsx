@@ -2,13 +2,16 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { realLabCopy } from '@/features/real-lab/copy';
-import { canOpenWorkspace, parseProxyDirective, starterDirective, type LabAttempt, type LabRequest } from '@/features/real-lab/policy';
+import { parseLabConfiguration, starterConfiguration, type LabTemplateVersion } from '@/features/real-lab/catalog';
+import { canOpenWorkspace, type LabAttempt, type LabRequest } from '@/features/real-lab/policy';
 import type { Locale } from '@/i18n/locales';
 import { postContent } from './content-request';
+import { RealLabCatalog } from './real-lab-catalog';
 
 type LabCopy = ReturnType<typeof realLabCopy>;
 
 function message(error: unknown, copy: LabCopy) {
+  if (error instanceof Error && error.message === '400') return copy.invalidConfig;
   if (error instanceof Error && error.message === '409') return copy.conflict;
   if (error instanceof Error && error.message === '429') return copy.quota;
   return copy.unavailable;
@@ -62,7 +65,7 @@ function Workspace({ attempt, copy, busy, validate }: {
   }, [dirty]);
 
   async function command(operation: 'config' | 'apply' | 'preview') {
-    if (operation === 'apply' && !parseProxyDirective(configuration ?? '')) {
+    if (operation === 'apply' && !parseLabConfiguration(configuration ?? '', attempt.templateVersion)) {
       setNotice({ error: true, text: copy.invalidConfig });
       editor.current?.focus();
       return;
@@ -103,7 +106,7 @@ function Workspace({ attempt, copy, busy, validate }: {
       <label htmlFor="lab-configuration">{copy.directive}</label>
       <textarea ref={editor} id="lab-configuration" name="configuration" aria-describedby="lab-config-hint"
         dir="ltr" translate="no" spellCheck={false} autoComplete="off" rows={3} maxLength={96}
-        value={configuration ?? starterDirective} readOnly={!editable || disabled}
+        value={configuration ?? starterConfiguration(attempt.templateVersion)} readOnly={!editable || disabled}
         onChange={(event) => setConfiguration(event.target.value)} />
       <div className="builder-controls">
         {editable && <button type="submit" className="identity-button" disabled={disabled}>{copy.apply}</button>}
@@ -126,13 +129,16 @@ function Workspace({ attempt, copy, busy, validate }: {
   </div>;
 }
 
-export function RealLab({ locale, initial }: { locale: Locale; initial: LabAttempt | null }) {
-  const copy = realLabCopy(locale);
+export function RealLab({ locale, initial, selected }: {
+  locale: Locale; initial: LabAttempt | null; selected: LabTemplateVersion;
+}) {
   const [attempt, setAttempt] = useState(initial);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState('');
   const startId = useRef<string | null>(null);
   const active = Boolean(attempt && attempt.state !== 'DESTROYED');
+  const version = (active && attempt?.templateVersion) || selected;
+  const copy = realLabCopy(locale, version);
 
   useEffect(() => {
     if (!active || pending) return;
@@ -166,7 +172,7 @@ export function RealLab({ locale, initial }: { locale: Locale; initial: LabAttem
 
   function start() {
     startId.current ??= crypto.randomUUID();
-    void submit({ operation: 'start', requestId: startId.current });
+    void submit({ operation: 'start', requestId: startId.current, templateVersion: selected });
   }
 
   function end(operation: 'stop' | 'reset') {
@@ -177,27 +183,35 @@ export function RealLab({ locale, initial }: { locale: Locale; initial: LabAttem
 
   const canStop = active && attempt?.state !== 'STOPPING' && attempt?.state !== 'CLEANUP_FAILED';
   const showWorkspace = attempt && (canOpenWorkspace(attempt.state) || attempt.state === 'VALIDATING');
-  return <div className="real-lab builder-fields">
-    <section className="notice builder-fields">
-      <h2>{copy.status}</h2>
-      <p role="status">{attempt ? copy.states[attempt.state] : copy.noAttempt}</p>
-      {active && attempt && <p>{copy.expires} <time dateTime={attempt.expiresAt}><bdi>
-        {new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: 'numeric', timeZone: 'UTC', timeZoneName: 'short' })
-          .format(new Date(attempt.expiresAt))}
-      </bdi></time></p>}
-      {attempt?.endReason && <p>{copy.reasons[attempt.endReason]}</p>}
-      <div className="builder-controls">
-        {!active && <button type="button" className="identity-button" disabled={pending}
-          onClick={start}>{pending ? copy.starting : copy.start}</button>}
-        {canStop && <>
-          <button type="button" className="identity-button" disabled={pending} onClick={() => end('stop')}>{copy.stop}</button>
-          <button type="button" className="identity-button" disabled={pending} onClick={() => end('reset')}>{copy.reset}</button>
-        </>}
-      </div>
-      {notice && <p role="alert">{notice}</p>}
-    </section>
-    {showWorkspace && <Workspace key={attempt.id} attempt={attempt} copy={copy} busy={pending}
-      validate={() => void submit({ operation: 'validate', id: attempt.id })} />}
-    {attempt?.state === 'DESTROYED' && <Result attempt={attempt} copy={copy} />}
-  </div>;
+  const visibleAttempt = attempt?.templateVersion === version ? attempt : null;
+  return <>
+    <RealLabCatalog locale={locale} selected={version} locked={active} />
+    <h1>{copy.title}</h1>
+    <p>{copy.introduction}</p>
+    <p>{copy.prerequisite}</p>
+    {active && <p>{selected === version ? copy.oneAtATime : `${copy.activeOther} ${copy.oneAtATime}`}</p>}
+    <div className="real-lab builder-fields">
+      <section className="notice builder-fields">
+        <h2>{copy.status}</h2>
+        <p role="status">{visibleAttempt ? copy.states[visibleAttempt.state] : copy.noAttempt}</p>
+        {active && visibleAttempt && <p>{copy.expires} <time dateTime={visibleAttempt.expiresAt}><bdi>
+          {new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: 'numeric', timeZone: 'UTC', timeZoneName: 'short' })
+            .format(new Date(visibleAttempt.expiresAt))}
+        </bdi></time></p>}
+        {visibleAttempt?.endReason && <p>{copy.reasons[visibleAttempt.endReason]}</p>}
+        <div className="builder-controls">
+          {!active && <button type="button" className="identity-button" disabled={pending}
+            onClick={start}>{pending ? copy.starting : copy.start}</button>}
+          {canStop && <>
+            <button type="button" className="identity-button" disabled={pending} onClick={() => end('stop')}>{copy.stop}</button>
+            <button type="button" className="identity-button" disabled={pending} onClick={() => end('reset')}>{copy.reset}</button>
+          </>}
+        </div>
+        {notice && <p role="alert">{notice}</p>}
+      </section>
+      {showWorkspace && <Workspace key={attempt.id} attempt={attempt} copy={copy} busy={pending}
+        validate={() => void submit({ operation: 'validate', id: attempt.id })} />}
+      {visibleAttempt?.state === 'DESTROYED' && <Result attempt={visibleAttempt} copy={copy} />}
+    </div>
+  </>;
 }

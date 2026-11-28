@@ -2,8 +2,8 @@ import { execFile } from 'node:child_process';
 import { createServer } from 'node:http';
 import { promisify } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
-import { blueDirective, checkRouting, greenDirective } from './checker.mjs';
-import { HttpError, isUpstream, readJson, respond, sameSecret, serve, templateVersion, tokenPattern, uuid } from './protocol.mjs';
+import { checkWorkspace } from './checker.mjs';
+import { applyChoice, HttpError, labTemplate, readJson, respond, sameSecret, serve, templateVersion, tokenPattern, uuid } from './protocol.mjs';
 
 const { LAB_CONTROLLER_SECRET: secret, LAB_NAMESPACE: namespace, LAB_SANDBOX_IMAGE: image } = process.env;
 if (!tokenPattern.test(secret ?? '') || !/^[a-z0-9][a-z0-9-]{0,42}$/.test(namespace ?? '') ||
@@ -12,6 +12,7 @@ if (!tokenPattern.test(secret ?? '') || !/^[a-z0-9][a-z0-9-]{0,42}$/.test(namesp
 const projectLabel = 'azaly.real-lab.project';
 const attemptLabel = 'azaly.real-lab.attempt';
 const expiryLabel = 'azaly.real-lab.expires';
+const templateLabel = 'azaly.real-lab.template';
 const filters = ['--filter', `label=${projectLabel}=${namespace}`];
 const inFlight = new Map();
 const dockerExec = promisify(execFile);
@@ -42,20 +43,35 @@ async function inventory() {
 }
 
 async function findContainer(id) {
-  const found = await docker('ps', '-aq', ...filters, '--filter', `label=${attemptLabel}=${id}`);
-  if (found && !/^[a-f0-9]{12,64}$/.test(found)) throw new Error('Ambiguous lab instance');
-  return found;
+  const found = await docker('ps', '-a', ...filters, '--filter', `label=${attemptLabel}=${id}`,
+    '--format', `{{.ID}} {{.Label "${templateLabel}"}}`);
+  if (!found) return null;
+  const [container, version = templateVersion, ...extra] = found.split(' ');
+  if (found.includes('\n') || extra.length || !/^[a-f0-9]{12,64}$/.test(container)) {
+    throw new Error('Ambiguous lab instance');
+  }
+  return { container, version };
 }
 
 const sandbox = (container, ...args) => docker('exec', container, ...args);
-const readConfig = (container) => sandbox(container, 'cat', '/run/azaly-lab/route.conf');
-const readProxy = (container) => sandbox(container, 'wget', '-T', '1', '-qO-', 'http://127.0.0.1:8080/');
 
-async function destroy(id) {
-  const container = await findContainer(id);
-  if (container) {
+const readConfig = (container, version) => sandbox(container, 'cat',
+  version === templateVersion ? '/run/azaly-lab/route.conf' : '/run/azaly-lab/exercise.conf');
+
+function readPreview(container, version) {
+  if (version === 'linux-file-permissions@1') {
+    return sandbox(container, 'stat', '-c', 'mode=%a owner=%u', '/run/azaly-lab/example');
+  }
+  const path = version === templateVersion ? '/' : '/metrics';
+  return sandbox(container, 'wget', '-T', '1', '-qO-', `http://127.0.0.1:8080${path}`);
+}
+
+async function destroy(id, version) {
+  const instance = await findContainer(id);
+  if (instance) {
+    if (version !== undefined && instance.version !== version) throw new HttpError(409);
     try {
-      await docker('rm', '-f', container);
+      await docker('rm', '-f', instance.container);
     } catch (error) {
       if (await findContainer(id)) throw error;
     }
@@ -63,22 +79,25 @@ async function destroy(id) {
   return { ok: true };
 }
 
-async function waitForProxy(container) {
+async function waitForWorkspace(container, version) {
+  const allowed = Object.values(labTemplate(version).previews);
   for (let attempt = 0; attempt < 10; attempt++) {
-    const body = await readProxy(container).catch(() => '');
-    if (body === 'upstream-green' || body === 'upstream-blue') return;
+    if (allowed.includes(await readPreview(container, version).catch(() => ''))) return;
     await delay(200);
   }
-  throw new Error('NGINX did not become ready');
+  throw new Error('Lab workspace did not become ready');
 }
 
-async function provision(id, expiresAt) {
+async function provision(id, expiresAt, version) {
   const expiry = Date.parse(expiresAt);
   if (!Number.isFinite(expiry) || expiry <= Date.now() || expiry > Date.now() + 16 * 60_000) throw new HttpError(409);
-  let container = await findContainer(id);
+  const instance = await findContainer(id);
+  if (instance && instance.version !== version) throw new HttpError(409);
+  let container = instance?.container;
   if (!container) {
     container = await docker('run', '-d', '--rm', '--pull=never', '--name', `azaly-lab-${namespace}-${id}`,
       '--label', `${projectLabel}=${namespace}`, '--label', `${attemptLabel}=${id}`, '--label', `${expiryLabel}=${expiry}`,
+      '--label', `${templateLabel}=${version}`, '--env', `LAB_TEMPLATE_VERSION=${version}`,
       '--env', `LAB_EXPIRES_EPOCH=${Math.floor(expiry / 1000)}`,
       '--network', 'none', '--cpus', '0.25', '--memory', '48m', '--memory-swap', '48m', '--pids-limit', '24',
       '--user', '101:101', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
@@ -86,22 +105,24 @@ async function provision(id, expiresAt) {
       '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=1m,uid=101,gid=101,mode=0700',
       '--log-driver', 'none', image);
   }
-  await waitForProxy(container);
+  await waitForWorkspace(container, version);
   return { ok: true };
 }
 
-async function activeContainer(id) {
+async function activeContainer(id, version) {
   const match = (await inventory()).find((entry) => entry.id === id);
   if (!match || match.expiry <= Date.now()) throw new HttpError(409);
-  const container = await findContainer(id);
-  if (!container) throw new HttpError(409);
-  return container;
+  const instance = await findContainer(id);
+  if (!instance || instance.version !== version) throw new HttpError(409);
+  return instance.container;
 }
 
-async function useSandbox(id, { operation, upstream }) {
-  const container = await activeContainer(id);
+async function useSandbox(id, input) {
+  const { operation, templateVersion: version } = input;
+  const container = await activeContainer(id, version);
+  const template = labTemplate(version);
   if (operation === 'check') {
-    const result = await checkRouting(() => readConfig(container), () => readProxy(container));
+    const result = await checkWorkspace(version, () => readConfig(container, version), () => readPreview(container, version));
     if (result.configurationOk && result.responseOk) {
       // A grant redeemed before the check can still arrive afterward.
       await sandbox(container, 'touch', '/run/azaly-lab/verified');
@@ -109,22 +130,25 @@ async function useSandbox(id, { operation, upstream }) {
     return result;
   }
   if (operation === 'apply') {
-    if (!isUpstream(upstream)) throw new HttpError(400);
+    const choice = applyChoice(version, input);
+    if (!choice) throw new HttpError(400);
+    const script = version === templateVersion ? ['sandbox-apply.sh', choice] : ['sandbox-exercise.sh', version, choice];
+    const [name, ...args] = script;
     try {
-      await sandbox(container, '/bin/sh', '/opt/azaly-lab/sandbox-apply.sh', upstream);
+      await sandbox(container, '/bin/sh', `/opt/azaly-lab/${name}`, ...args);
     } catch (error) {
       if (error?.code === 75) throw new HttpError(409);
       throw error;
     }
   }
   if (operation === 'config' || operation === 'apply') {
-    const configuration = await readConfig(container);
-    if (configuration !== blueDirective && configuration !== greenDirective) throw new Error('Invalid sandbox configuration');
+    const configuration = await readConfig(container, version);
+    if (!Object.values(template.configurations).includes(configuration)) throw new Error('Invalid sandbox configuration');
     return { configuration };
   }
   if (operation === 'preview') {
-    const body = await readProxy(container);
-    if (body !== 'upstream-blue' && body !== 'upstream-green') throw new Error('Invalid sandbox response');
+    const body = await readPreview(container, version);
+    if (!Object.values(template.previews).includes(body)) throw new Error('Invalid sandbox response');
     return { body };
   }
   throw new HttpError(400);
@@ -136,11 +160,15 @@ const server = createServer(serve(async (request, response) => {
   if (!sameSecret(request.headers.authorization, `Bearer ${secret}`)) throw new HttpError(403);
   const input = await readJson(request);
   if (input.operation === 'inventory') return respond(response, 200, { ids: (await inventory()).map(({ id }) => id) });
-  if (typeof input.id !== 'string' || !uuid.test(input.id) || input.templateVersion !== templateVersion) throw new HttpError(400);
+  const version = input.templateVersion;
+  const orphanCleanup = input.operation === 'destroy' && version === undefined;
+  if (typeof input.id !== 'string' || !uuid.test(input.id) || (!orphanCleanup && !labTemplate(version))) {
+    throw new HttpError(400);
+  }
 
   const payload = await serialize(input.id, () => {
-    if (input.operation === 'provision') return provision(input.id, input.expiresAt);
-    if (input.operation === 'destroy') return destroy(input.id);
+    if (input.operation === 'provision') return provision(input.id, input.expiresAt, version);
+    if (input.operation === 'destroy') return destroy(input.id, version);
     return useSandbox(input.id, input);
   });
   respond(response, 200, payload);

@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { Pool } from 'pg';
-import { checkerVersion, HttpError, isUpstream, readJson, respond, serve, templateVersion, tokenPattern, uuid } from './protocol.mjs';
+import { applyChoice, HttpError, isUpstream, labTemplate, readJson, respond, serve, templateVersion, tokenPattern, uuid } from './protocol.mjs';
 
 const { REAL_LAB_DATABASE_URL: databaseUrl, LAB_CONTROLLER_URL: controllerUrl, LAB_CONTROLLER_SECRET: secret } = process.env;
 const endpoint = new URL(controllerUrl ?? '');
@@ -20,22 +20,23 @@ async function control(input) {
   const response = await fetch(new URL('/control', endpoint), {
     method: 'POST', redirect: 'error', signal: AbortSignal.timeout(16_000),
     headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ templateVersion, ...input }),
+    body: JSON.stringify(input),
   });
   if (!response.ok) throw new HttpError(response.status === 409 ? 409 : 503);
   return response.json();
 }
 
-function validCheck(result) {
-  return result?.checkerVersion === checkerVersion && typeof result.configurationOk === 'boolean' &&
+function validCheck(result, version) {
+  return result?.checkerVersion === labTemplate(version)?.checkerVersion && typeof result.configurationOk === 'boolean' &&
     typeof result.responseOk === 'boolean';
 }
 
 async function dispatch(job) {
   let result;
   try {
-    result = await control({ id: job.id, operation: job.operation, expiresAt: job.expiresAt });
-    if (job.operation === 'check' ? !validCheck(result) : result?.ok !== true) throw new Error('Untrusted lab worker reply');
+    if (!labTemplate(job.templateVersion)) throw new Error('Untrusted lab job');
+    result = await control({ id: job.id, operation: job.operation, expiresAt: job.expiresAt, templateVersion: job.templateVersion });
+    if (job.operation === 'check' ? !validCheck(result, job.templateVersion) : result?.ok !== true) throw new Error('Untrusted lab worker reply');
   } catch {
     result = null;
     console.error(JSON.stringify({ event: 'lab_job_failed', operation: job.operation, attempt: job.id }));
@@ -81,14 +82,19 @@ async function work() {
 const server = createServer(serve(async (request, response) => {
   if (request.method === 'GET' && request.url === '/health') return respond(response, 200, { ok: true });
   if (request.method !== 'POST' || request.url !== '/session') throw new HttpError(404);
-  const { grant, upstream, ...unknownFields } = await readJson(request);
+  const { grant, upstream, choice, ...unknownFields } = await readJson(request);
   if (Object.keys(unknownFields).length || typeof grant !== 'string' || !tokenPattern.test(grant) ||
-      (upstream !== undefined && !isUpstream(upstream))) throw new HttpError(400);
+      (upstream !== undefined && !isUpstream(upstream)) || (choice !== undefined && typeof choice !== 'string')) throw new HttpError(400);
 
   const access = await query('SELECT real_lab.consume($1) AS value', [grant]);
   if (!access) throw new HttpError(403);
-  if ((access.operation === 'apply') !== isUpstream(upstream)) throw new HttpError(400);
-  const output = await control({ id: access.id, operation: access.operation, upstream });
+  const version = access.templateVersion ?? templateVersion;
+  if (!labTemplate(version)) throw new HttpError(503);
+  const validInput = access.operation === 'apply'
+    ? applyChoice(version, { upstream, choice }) !== null
+    : upstream === undefined && choice === undefined;
+  if (!validInput) throw new HttpError(400);
+  const output = await control({ id: access.id, operation: access.operation, templateVersion: version, upstream, choice });
   respond(response, 200, output);
 }));
 server.requestTimeout = 20_000;

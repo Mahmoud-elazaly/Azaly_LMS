@@ -60,6 +60,6 @@ export const labConcepts = knowledge.table('lab_concepts', {
   unique('lab_concepts_guided_unique').on(table.courseSlug, table.labId, table.conceptId),
   unique('lab_concepts_real_unique').on(table.realTemplateVersion, table.conceptId),
   check('lab_concepts_kind', sql`(${table.courseSlug} IS NOT NULL AND ${table.labId} IS NOT NULL AND ${table.realTemplateVersion} IS NULL)
-    OR (${table.courseSlug} IS NULL AND ${table.labId} IS NULL AND ${table.realTemplateVersion} = 'nginx-reverse-proxy@1'
+    OR (${table.courseSlug} IS NULL AND ${table.labId} IS NULL AND ${table.realTemplateVersion} IN ('nginx-reverse-proxy@1','linux-file-permissions@1','prometheus-exposition@1')
       AND ${table.realTemplateVersion} IS NOT NULL)`),
 ]);

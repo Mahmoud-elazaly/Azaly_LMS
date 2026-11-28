@@ -49,6 +49,7 @@ services:
       PHASE9_TEST: ${PHASE9_TEST:-}
       PHASE10_TEST: ${PHASE10_TEST:-}
       PHASE11_TEST: ${PHASE11_TEST:-}
+      PHASE12_TEST: ${PHASE12_TEST:-}
       AUTH_TEST_OWNER_PASSWORD: ${AUTH_TEST_OWNER_PASSWORD:-}
     depends_on:
       postgres:

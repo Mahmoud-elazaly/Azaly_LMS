@@ -14,5 +14,6 @@
 | 9 (`v0.8.0`) | Cross-Track Knowledge Graph & Mastery Analytics |
 | 10 (`v0.9.0`) | Server-Side AI Mock Technical Interviewer |
 | 11 (`v1.0.0`) | Production Readiness, Security & Release Hardening |
+| 12 (`v1.1.0`) | Multi-track Real Labs expansion with verified mastery evidence |
 
 Restore, monitoring, load and security checks remain prerequisites for external enrollment.

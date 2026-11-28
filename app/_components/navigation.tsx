@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { ComponentProps } from 'react';
 import { AccountIcon } from './account-icon';
+import { isLabTemplateVersion, realLabHref } from '@/features/real-lab/catalog';
 import type { Locale } from '@/i18n/locales';
 
 export type NavigationGroup = {
@@ -43,6 +44,9 @@ export function LocaleSwitch({ locale, language }: { locale: Locale; language: s
   let alternate = `/${other}${suffix ? `/${suffix}` : ''}`;
   if (suffix === 'learning' || suffix === 'builder') {
     alternate = selectedCoursePath(other, suffix, query.get('id'), query.get('lesson'));
+  } else if (suffix === 'real-lab') {
+    const version = query.get('template');
+    if (isLabTemplateVersion(version)) alternate = realLabHref(other, version);
   } else if (suffix === 'knowledge-graph') {
     const filters = new URLSearchParams();
     for (const name of ['track', 'relation', 'concept']) {

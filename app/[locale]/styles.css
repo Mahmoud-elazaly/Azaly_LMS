@@ -251,7 +251,12 @@ button.identity-button { overflow: hidden; text-overflow: ellipsis; }
 .guided-badge { background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; padding: .2rem .65rem; color: var(--text); }
 .guided-badge[data-reviewed] { border-color: var(--accent); color: var(--accent); }
 
+.real-lab-catalog { margin-block: 1rem; }
+.real-lab-catalog > * { max-inline-size: 100%; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: .5rem; }
+.real-lab-catalog [aria-current="page"] { font-weight: 700; border-color: var(--accent); }
+.real-lab-catalog > span { color: var(--muted); }
 .real-lab { max-inline-size: 64rem; }
+.real-lab pre { max-inline-size: 100%; overflow-x: auto; }
 .real-lab-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
 .real-lab textarea { font-family: var(--font-mono, monospace); text-align: left; }
 .real-lab ul { padding-inline-start: 1.25rem; list-style: disc; }

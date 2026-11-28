@@ -72,3 +72,14 @@ The cumulative gate tests definer ownership and ACLs, invalid sessions, distinct
 | Browser and logs | The application denies framing and MIME sniffing, sends `Referrer-Policy: no-referrer`, and disables camera, microphone, and geolocation. Next.js incoming request URL logging is disabled. Identity diagnostics emit known error categories and codes. The gate uses synthetic server credentials to check the built browser assets. Operators control proxy and infrastructure logging. |
 
 Deployment-specific restore, monitoring, load, and security checks remain prerequisites for external enrollment. [Phase 11 gate evidence](PLANS.md#phase-11--production-readiness-security--release-hardening)
+
+## Phase 12 multi-track Real Lab trust boundary
+
+| Threat | Enforcement |
+| --- | --- |
+| Client selects a different template for an existing attempt | The web API accepts a version only for start. PostgreSQL preserves the launch version across retries and derives the version on each claimed job and redeemed grant. The controller checks it against the sandbox label within the deployment namespace. |
+| Configuration introduces arbitrary shell, files, or destinations | Versioned templates accept a finite set of values. The bridge and controller recheck the normalized choice against the attempt's template. The controller executes fixed argument arrays and packaged scripts. Learners receive bounded text excerpts from fixed files or loopback endpoints. |
+| A client or mismatched checker certifies completion | Only the bridge runtime can finish a live lease. PostgreSQL checks the exact checker version for the attempt and requires both criteria for `SYSTEM_VERIFIED`. Learner and bridge runtime groups have no direct table write privileges. |
+| Additional tracks multiply capacity or allow reach into infrastructure | Global and per-learner caps and rate limits apply across tracks. Every sandbox uses the existing non-root limits, network-none namespace, read-only root, and bounded writable tmpfs. Expiry and reconciliation cover all templates. |
+
+The PostgreSQL entry points keep the scoped non-login owner, fixed `pg_catalog` search path, and revoked PUBLIC execution. Only the isolated controller has a Docker socket. [Phase 12 evidence](PLANS.md#phase-12--multi-track-real-labs-expansion)

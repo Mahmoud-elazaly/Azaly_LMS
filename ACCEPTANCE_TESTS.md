@@ -83,3 +83,10 @@ Run `bash infra/verify.sh` for the cumulative Phases 1–11 gate.
 - Check unauthenticated, wrong-role, cross-origin and impersonated requests, closed registration, and the shared sign-in budget. Scan browser assets built with synthetic server credentials.
 - Exercise the workspace and learner workflows in Arabic and English, in Light, Dark, and System following both operating-system color preferences. Keep technical commands and diagrams LTR and check page width and focus at the applicable desktop and mobile sizes.
 - Verify GitHub's required `verify` job, the annotated release tag and GitHub Release, then the retained development volume, health, readiness, and both locale footers. [Observed evidence](PLANS.md#phase-11--production-readiness-security--release-hardening)
+
+## Phase 12 multi-track Real Labs
+
+- Rehearse and replay the `v1.0.0` database upgrade. Compare existing learning and lab evidence and ontology fixtures before and after migration `0013`.
+- Verify exact template and checker pairs, the new SQL routine ACLs, launch replay, per-learner concurrency across tracks, and denial of cross-user and cross-session access. Verify a mismatched checker cannot record provenance.
+- Run both new exercises against the real bridge, controller, and sandbox. Confirm failed and passed checks, persisted `SYSTEM_VERIFIED` provenance, private mastery credit, and removal of completed concepts from the learner's Weakest Concepts queue.
+- Exercise both locales and Light, Dark, and System themes at 390×844, 1280×800, and 1440×900. Check keyboard focus, text direction, and page width. Confirm stop and expiry teardown and inspect isolation and offline expiry for both new templates. Retain all previous checks in `bash infra/verify.sh`. [Phase 12 evidence](PLANS.md#phase-12--multi-track-real-labs-expansion)

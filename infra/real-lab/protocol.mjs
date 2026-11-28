@@ -1,7 +1,8 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
+import templates from '../../src/features/real-lab/templates.json' with { type: 'json' };
+
 export const templateVersion = 'nginx-reverse-proxy@1';
-export const checkerVersion = 'nginx-route@1';
 export const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 export const tokenPattern = /^[a-f0-9]{64}$/;
 
@@ -52,3 +53,14 @@ export function serve(handler) {
 }
 
 export const isUpstream = (name) => name === 'blue' || name === 'green';
+
+export function labTemplate(version) {
+  return typeof version === 'string' && Object.hasOwn(templates, version) ? templates[version] : null;
+}
+
+export function applyChoice(version, { upstream, choice }) {
+  if (version === templateVersion) return choice === undefined && isUpstream(upstream) ? upstream : null;
+  const template = labTemplate(version);
+  return upstream === undefined && typeof choice === 'string' && template && Object.hasOwn(template.configurations, choice)
+    ? choice : null;
+}

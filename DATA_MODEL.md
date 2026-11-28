@@ -59,3 +59,11 @@ The latest completed interview covering a concept’s track contributes its over
 ## Phase 11 identity grants
 
 Migration `0012_identity_definer_hardening` changes ownership and grants for the six existing identity routines. `academy_identity_definer` is a non-login role. The migration preserves the tables and stored records. The user trigger permits the new owner to insert invited roles below Owner while retaining the existing Owner and suspension protections. The sign-in limiter uses the existing `identity.account_rate_limit` table. Sign-in buckets are keyed by an HMAC of the normalized email identifier and deployment secret. [Phase 11 gate evidence](PLANS.md#phase-11--production-readiness-security--release-hardening)
+
+## Phase 12 Real Lab templates and mastery
+
+Migration `0013_multi_track_real_labs` expands the existing template, checker-pair, and Real Lab concept-link constraints. It adds two concept rows, their prerequisite edges, and two template mappings. Existing NGINX attempts, checks, and mappings remain on their original versions. Both lab modes continue to use the single `academy` database.
+
+`real_lab.student(text,text,uuid,text)` takes the approved template version at launch and stores it on `real_lab.attempts`. The existing three-argument signature defaults new launches to NGINX. Replaying a launch ID with its original version returns the attempt. Reusing that ID with a different version conflicts. Grants and jobs return the attempt's stored template. The worker finish function accepts only the paired checker version on a live validation lease. The unchanged provenance constraint requires both observed criteria to succeed before a check can be stored as `SYSTEM_VERIFIED`.
+
+The existing mastery projection reads the new mappings and verified checks for the signed-in learner. Eligible lab items without verified results remain in the remediation queue. A verified result supplies full lab credit after workspace teardown. [Phase 9 scoring](#phase-9-concept-ontology-and-mastery) · [Phase 12 evidence](PLANS.md#phase-12--multi-track-real-labs-expansion)

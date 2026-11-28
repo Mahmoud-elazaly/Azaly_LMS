@@ -112,21 +112,21 @@ phase7_destroy_test_labs() {
 
 phase7_provision_fixture() {
   dc exec -T lab-controller node --input-type=module -e '
-    const [id, duration] = process.argv.slice(1);
+    const [id, duration, templateVersion] = process.argv.slice(1);
     const response = await fetch("http://127.0.0.1:8401/control", {
       method: "POST", signal: AbortSignal.timeout(20000),
       headers: { Authorization: `Bearer ${process.env.LAB_CONTROLLER_SECRET}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ operation: "provision", templateVersion: "nginx-reverse-proxy@1", id,
+      body: JSON.stringify({ operation: "provision", templateVersion, id,
         expiresAt: new Date(Date.now() + Number(duration)).toISOString() }),
     });
     if (!response.ok || !(await response.json()).ok) throw new Error("Lab fixture did not start");
-  ' "$1" "$2"
+  ' "$1" "$2" "${3:-nginx-reverse-proxy@1}"
 }
 
 phase7_wait_until_removed() {
   local attempt id
   id="$1"
-  for attempt in $(seq 1 20); do
+  for attempt in $(seq 1 "${2:-20}"); do
     if [[ -z "$(docker ps -aq --filter "label=azaly.real-lab.project=$project" --filter "label=azaly.real-lab.attempt=$id")" ]]; then return 0; fi
     sleep 1
   done

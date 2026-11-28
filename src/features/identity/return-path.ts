@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isLabTemplateVersion, realLabHref } from '../real-lab/catalog';
 import type { Locale } from '../../i18n/locales';
 
 const destinations = new Set(['dashboard', 'profile', 'admin', 'admin/users', 'admin/reports', 'instructor', 'student',
@@ -18,6 +19,10 @@ export function returnPath(locale: Locale, value: unknown) {
   if (typeof value !== 'string' || !value.startsWith(prefix)) return fallback;
   const path = value.slice(prefix.length);
   if (destinations.has(path) || /^courses\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path)) return value;
+  if (path.startsWith('real-lab?')) {
+    const version = new URLSearchParams(path.slice('real-lab?'.length)).get('template');
+    if (isLabTemplateVersion(version) && realLabHref(locale, version) === value) return value;
+  }
   const match = /^(builder|learning)\?id=([^&?#]+)(?:&lesson=([^&?#]+))?$/.exec(path);
   if (match && (match[1] === 'builder' || match[1] === 'learning') &&
       selectedCoursePath(locale, match[1], match[2], match[3]) === value) return value;
