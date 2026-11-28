@@ -5,10 +5,10 @@ import { selectedCoursePath } from '@/features/identity/return-path';
 import { currentPrincipal } from '@/features/identity/session';
 import { learningCopy } from '@/features/learning/copy';
 import { myEnrollments, readPlayer } from '@/features/learning/service';
-import { realLabCopy } from '@/features/real-lab/copy';
 import { realLabEnabled } from '@/features/real-lab/service';
 import { isLocale } from '@/i18n/locales';
 import { CoursePlayer } from '../../_components/learning';
+import { RealLabCatalog } from '../../_components/real-lab-catalog';
 
 export default async function LearningPage({ params, searchParams }: PageProps<'/[locale]/learning'>) {
   const { locale } = await params;
@@ -33,7 +33,7 @@ export default async function LearningPage({ params, searchParams }: PageProps<'
   const enrollments = await myEnrollments(locale).catch(() => null);
   return <section className="page-copy">
     <h1>{text.learning}</h1>
-    {realLabEnabled() && <Link href={`/${locale}/real-lab`}>{realLabCopy(locale).title}</Link>}
+    {realLabEnabled() && <RealLabCatalog locale={locale} />}
     {enrollments === null ? <p role="alert">{text.unavailable}</p>
       : enrollments.length === 0 ? <p>{text.empty}</p>
         : <ul className="identity-users">{enrollments.map((entry) => <li className="notice" key={entry.id}>

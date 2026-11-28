@@ -1,8 +1,12 @@
+import { templateVersion, type LabTemplateVersion } from './catalog';
 import type { Locale } from '../../i18n/locales';
 
 const en = {
   title: 'NGINX reverse proxy lab',
   back: 'My learning',
+  catalog: 'Real Labs',
+  oneAtATime: 'Stop or reset your active lab before switching to another.',
+  activeOther: 'Your active lab is shown below.',
   introduction: 'This Real Lab runs an isolated NGINX instance. Route the preview through the blue upstream and verify the live response.',
   prerequisite: 'The lab runs for 15 minutes. Reset clears the workspace so you can start again.',
   denied: 'This lab is available to learners.',
@@ -48,6 +52,9 @@ const en = {
 const ar: typeof en = {
   title: 'مختبر الوكيل العكسي NGINX',
   back: 'تعلّمي',
+  catalog: 'المختبرات الفعلية',
+  oneAtATime: 'أوقف مختبرك النشط أو أعد ضبطه قبل الانتقال إلى مختبر آخر.',
+  activeOther: 'يظهر مختبرك النشط أدناه.',
   introduction: 'يشغّل هذا المختبر الفعلي نسخة معزولة من NGINX. وجّه طلب المعاينة إلى الخادم الأزرق وتحقّق من الاستجابة الفعلية.',
   prerequisite: 'يعمل المختبر لمدة 15 دقيقة. تمسح إعادة الضبط مساحة العمل لتتمكّن من البدء مجددًا.',
   denied: 'هذا المختبر متاح للمتعلّمين.',
@@ -90,4 +97,82 @@ const ar: typeof en = {
   },
 };
 
-export const realLabCopy = (locale: Locale) => locale === 'ar' ? ar : en;
+const linux = {
+  en: {
+    title: 'Linux file permissions lab',
+    introduction: 'Protect a newly created settings file so that only its owner can read or write it. Apply the mask and inspect the mode and owner reported by Linux.',
+    editor: 'File creation mask',
+    directive: 'Linux umask command',
+    hint: 'The starter allows group and other users to read the file. Set a mask that removes all group and other permissions.',
+    proxy: 'File metadata',
+    preview: 'Inspect file',
+    check: 'Verify permissions',
+    correctConfig: 'The configured mask restricts group and other permissions.',
+    wrongConfig: 'The creation mask must remove all group and other permissions.',
+    correctResponse: 'Linux reports mode 600 and the expected owner.',
+    wrongResponse: 'The file does not have the required mode and owner.',
+    invalidConfig: 'Enter one umask command with a mask of 022 or 077.',
+  },
+  ar: {
+    title: 'مختبر أذونات ملفات لينكس',
+    introduction: 'احمِ ملف إعدادات جديدًا بحيث يقتصر الوصول للقراءة والكتابة على مالكه. طبّق القناع وافحص الأذونات والمالك كما يعرضهما لينكس.',
+    editor: 'قناع أذونات إنشاء الملفات',
+    directive: 'أمر umask في لينكس',
+    hint: 'يتيح الإعداد الأولي للمجموعة والآخرين قراءة الملف. اضبط قناعًا يزيل كل أذونات المجموعة والآخرين.',
+    proxy: 'بيانات الملف',
+    preview: 'فحص الملف',
+    check: 'التحقّق من الأذونات',
+    correctConfig: 'يقيّد القناع المضبوط أذونات المجموعة والآخرين.',
+    wrongConfig: 'يجب أن يزيل قناع الإنشاء كل أذونات المجموعة والآخرين.',
+    correctResponse: 'يعرض لينكس الأذونات 600 والمالك المتوقّع.',
+    wrongResponse: 'لا يطابق الملف الأذونات والمالك المطلوبين.',
+    invalidConfig: 'أدخل أمر umask واحدًا بالقناع 022 أو 077.',
+  },
+};
+const exposition = {
+  en: {
+    title: 'Prometheus metrics exposition lab',
+    introduction: 'Publish a checkout counter with the production environment label. Inspect the live metrics endpoint to confirm its type and labels.',
+    editor: 'Metrics configuration',
+    directive: 'Metrics environment setting',
+    hint: 'The starter labels the counter as staging. Change its environment label to production.',
+    proxy: 'Metrics response',
+    preview: 'Fetch metrics',
+    check: 'Verify metrics',
+    correctConfig: 'The configured environment is production.',
+    wrongConfig: 'The environment must be set to production.',
+    correctResponse: 'The live endpoint returned the expected counter and label.',
+    wrongResponse: 'The live endpoint did not return the expected counter and label.',
+    invalidConfig: 'Enter a single environment setting for staging or production.',
+  },
+  ar: {
+    title: 'مختبر عرض مقاييس Prometheus',
+    introduction: 'انشر عدّاد عمليات الدفع مع وسم بيئة الإنتاج. افحص نقطة المقاييس الفعليّة للتأكّد من نوعه ووسومه.',
+    editor: 'إعداد المقاييس',
+    directive: 'إعداد بيئة المقاييس',
+    hint: 'يشير الإعداد الأولي إلى بيئة الاختبار. غيّر وسم بيئة العدّاد إلى الإنتاج.',
+    proxy: 'استجابة المقاييس',
+    preview: 'جلب المقاييس',
+    check: 'التحقّق من المقاييس',
+    correctConfig: 'يشير الإعداد إلى بيئة الإنتاج.',
+    wrongConfig: 'يجب ضبط الإعداد على بيئة الإنتاج.',
+    correctResponse: 'أعادت نقطة المقاييس الفعليّة العدّاد والوسم المتوقّعين.',
+    wrongResponse: 'لم تُعِد نقطة المقاييس الفعليّة العدّاد والوسم المتوقّعين.',
+    invalidConfig: 'أدخل إعدادًا واحدًا لبيئة الاختبار أو الإنتاج في سطر واحد.',
+  },
+};
+
+const shared = { en, ar };
+const copyByTemplate: Record<LabTemplateVersion, Record<Locale, typeof en>> = {
+  [templateVersion]: shared,
+  'linux-file-permissions@1': {
+    en: { ...en, ...linux.en, states: { ...en.states, VALIDATING: 'Checking file permissions' } },
+    ar: { ...ar, ...linux.ar, states: { ...ar.states, VALIDATING: 'جارٍ التحقّق من أذونات الملف' } },
+  },
+  'prometheus-exposition@1': {
+    en: { ...en, ...exposition.en, states: { ...en.states, VALIDATING: 'Checking the live metrics endpoint' } },
+    ar: { ...ar, ...exposition.ar, states: { ...ar.states, VALIDATING: 'جارٍ التحقّق من نقطة المقاييس الفعليّة' } },
+  },
+};
+
+export const realLabCopy = (locale: Locale, version: LabTemplateVersion = templateVersion) => copyByTemplate[version][locale];

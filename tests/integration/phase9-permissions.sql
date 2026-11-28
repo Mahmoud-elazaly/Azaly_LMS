@@ -34,11 +34,18 @@ DECLARE
   linux uuid := (SELECT id FROM knowledge.concepts WHERE slug = 'linux-networking');
   nginx uuid := (SELECT id FROM knowledge.concepts WHERE slug = 'nginx-reverse-proxy');
 BEGIN
-  IF (SELECT count(*) FROM knowledge.concepts) <> 12
-    OR (SELECT count(*) FROM knowledge.concept_edges) <> 15
+  -- Keep the original seed counts scoped to the Phase 9 ontology.
+  IF (SELECT count(*) FROM knowledge.concepts WHERE slug NOT IN ('linux-file-permissions','prometheus-exposition')) <> 12
+    OR (SELECT count(*) FROM knowledge.concept_edges e
+      JOIN knowledge.concepts source ON source.id = e.source_concept_id
+      JOIN knowledge.concepts target ON target.id = e.target_concept_id
+      WHERE source.slug NOT IN ('linux-file-permissions','prometheus-exposition')
+        AND target.slug NOT IN ('linux-file-permissions','prometheus-exposition')) <> 15
     OR (SELECT count(*) FROM knowledge.lesson_concepts WHERE course_slug = 'prometheus-grafana') <> 14
     OR (SELECT count(*) FROM knowledge.question_concepts WHERE course_slug = 'prometheus-grafana') <> 12
-    OR (SELECT count(*) FROM knowledge.lab_concepts) <> 5
+    OR (SELECT count(*) FROM knowledge.lab_concepts
+      WHERE real_template_version IS NULL
+        OR real_template_version NOT IN ('linux-file-permissions@1','prometheus-exposition@1')) <> 5
   THEN RAISE EXCEPTION 'The curated ontology is incomplete'; END IF;
   BEGIN
     INSERT INTO knowledge.concept_edges (source_concept_id,target_concept_id,relation_type) VALUES (linux,linux,'monitors');

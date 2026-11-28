@@ -124,7 +124,7 @@ test('explores the bilingual graph and updates private remediation from live lea
     await expect(page).toHaveURL(/relation=secures/);
     await relation.selectOption('');
     await track.selectOption('observability');
-    const node = canvas.getByRole('button', { name: /^Prometheus\b/ });
+    const node = canvas.getByRole('button').filter({ has: page.getByText(title, { exact: true }) });
     await node.focus();
     await node.press('Enter');
     const drawer = page.getByRole('dialog', { name: title });

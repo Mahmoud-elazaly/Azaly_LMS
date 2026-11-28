@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { isLabTemplateVersion, realLabHref, templateVersion } from '@/features/real-lab/catalog';
+import { realLabCopy } from '@/features/real-lab/copy';
 import { masteryCopy } from '@/features/mastery/copy';
 import type { Material } from '@/features/mastery/model';
 import type { Locale } from '@/i18n/locales';
@@ -9,10 +11,15 @@ export function masteryFormat(locale: Locale) {
 
 export function PracticeLink({ item, locale, labsEnabled }: { item: Material; locale: Locale; labsEnabled: boolean }) {
   const t = masteryCopy(locale);
-  const title = item.kind === 'real' ? t.realTitle : item.title;
+  let title: string;
+  if (item.kind === 'real') {
+    title = isLabTemplateVersion(item.id) && item.id !== templateVersion ? realLabCopy(locale, item.id).title : t.realTitle;
+  } else {
+    title = item.title;
+  }
   let href: string | undefined;
   if (item.kind === 'real') {
-    if (labsEnabled) href = `/${locale}/real-lab`;
+    if (labsEnabled && isLabTemplateVersion(item.id)) href = realLabHref(locale, item.id);
   } else if (item.enrollmentId) {
     const base = `/${locale}/learning?id=${item.enrollmentId}`;
     href = item.kind === 'lesson' ? `${base}&lesson=${item.id}#current-lesson`
